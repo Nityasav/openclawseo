@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingDown, TrendingUp, Minus, Download, Search } from "lucide-react";
+import { TrendingDown, TrendingUp, Minus, Download, Search, Sparkles, Loader2 } from "lucide-react";
 import { cn, formatNumber, getPositionBadgeColor, getOpportunityColor } from "@/lib/utils";
 
 interface Keyword {
@@ -17,9 +18,13 @@ interface Keyword {
   difficulty: number | null;
   opportunity_score: number | null;
   last_checked_at: string | null;
+  source?: string | null;
 }
 
-export function KeywordsTable({ keywords }: { keywords: Keyword[] }) {
+export function KeywordsTable({ keywords, siteId, hasGa4 }: { keywords: Keyword[]; siteId?: string | null; hasGa4?: boolean }) {
+  const router = useRouter();
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<keyof Keyword>("opportunity_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -61,6 +66,24 @@ export function KeywordsTable({ keywords }: { keywords: Keyword[] }) {
     a.click();
   }
 
+  async function handleDiscover() {
+    setDiscovering(true);
+    setDiscoverError(null);
+    try {
+      const res = await fetch("/api/v1/keywords/discover", { method: "POST" });
+      const data = await res.json();
+      if (!data.success) {
+        setDiscoverError(data.error ?? "Discovery failed");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setDiscoverError("Failed to connect to server");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
   const SortHeader = ({ field, label }: { field: keyof Keyword; label: string }) => (
     <th
       className="cursor-pointer pb-3 pr-4 text-left text-xs font-medium uppercase text-gray-500 hover:text-gray-900"
@@ -74,11 +97,24 @@ export function KeywordsTable({ keywords }: { keywords: Keyword[] }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Keywords ({filtered.length})</CardTitle>
-        <Button variant="outline" size="sm" onClick={exportCsv}>
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          {siteId && (
+            <Button variant="default" size="sm" onClick={handleDiscover} disabled={discovering}>
+              {discovering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {discovering ? "Discovering..." : "Discover Keywords"}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
+      {discoverError && (
+        <div className="mx-6 mb-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {discoverError}
+        </div>
+      )}
       <CardContent>
         <div className="mb-4 flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-48">
@@ -107,7 +143,11 @@ export function KeywordsTable({ keywords }: { keywords: Keyword[] }) {
         {keywords.length === 0 ? (
           <div className="py-12 text-center text-gray-400">
             <p>No keywords tracked yet.</p>
-            <p className="mt-1 text-sm">Connect Google Search Console in Settings to import keywords.</p>
+            <p className="mt-1 text-sm">
+              {siteId
+                ? 'Click "Discover Keywords" to find relevant keywords for your site using AI.'
+                : "Connect Google Analytics in Settings, then discover keywords."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">

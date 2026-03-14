@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Copy, XCircle } from "lucide-react";
+import { CheckCircle, Copy, XCircle, Loader2, Globe } from "lucide-react";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,28 @@ const SCHEMA_RECOMMENDATIONS = [
 ];
 
 export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geoScore: number }) {
+  const router = useRouter();
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+
+  async function handleCheckCitations() {
+    setChecking(true);
+    setCheckError(null);
+    try {
+      const res = await fetch("/api/v1/geo/check-citations", { method: "POST" });
+      const data = await res.json();
+      if (!data.success) {
+        setCheckError(data.error ?? "Citation check failed");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setCheckError("Failed to connect to server");
+    } finally {
+      setChecking(false);
+    }
+  }
+
   const gaugeData = [{ name: "Score", value: geoScore, fill: geoScore > 60 ? "#10b981" : geoScore > 30 ? "#f59e0b" : "#ef4444" }];
 
   return (
@@ -114,13 +138,22 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>LLM Citation Checks ({geoRecords.length} queries)</CardTitle>
+          <Button variant="default" size="sm" onClick={handleCheckCitations} disabled={checking}>
+            {checking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+            {checking ? "Checking..." : "Check LLM Citations"}
+          </Button>
         </CardHeader>
+        {checkError && (
+          <div className="mx-6 mb-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {checkError}
+          </div>
+        )}
         <CardContent>
           {geoRecords.length === 0 ? (
             <div className="py-8 text-center text-gray-400">
-              <p>No GEO records yet. Run an agent audit to start checking LLM citations.</p>
+              <p>No GEO records yet. Click &quot;Check LLM Citations&quot; to analyze your keyword visibility.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

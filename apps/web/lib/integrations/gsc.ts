@@ -32,13 +32,24 @@ export async function fetchGscData(
   refreshToken: string,
   siteUrl: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  options?: { dimensions?: string[]; rowLimit?: number }
 ) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({
     access_token: accessToken,
     refresh_token: refreshToken,
   });
+
+  // Auto-refresh token if needed
+  if (refreshToken) {
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+    } catch {
+      // If refresh fails, use existing access token
+    }
+  }
 
   const searchconsole = google.searchconsole({ version: "v1", auth: oauth2Client });
 
@@ -47,8 +58,8 @@ export async function fetchGscData(
     requestBody: {
       startDate,
       endDate,
-      dimensions: ["query", "page"],
-      rowLimit: 500,
+      dimensions: options?.dimensions ?? ["query", "page"],
+      rowLimit: options?.rowLimit ?? 500,
     },
   });
 

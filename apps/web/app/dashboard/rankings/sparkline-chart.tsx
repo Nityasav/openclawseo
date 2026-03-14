@@ -1,33 +1,32 @@
 "use client";
 
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { cn } from "@/lib/utils";
+import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 
-interface SparklineChartProps {
-  position: number;
+interface DeltaBadgeProps {
   delta: number;
+  label?: string;
 }
 
-export function SparklineChart({ position, delta }: SparklineChartProps) {
-  // Generate mock historical data based on current position + delta
-  const data = Array.from({ length: 7 }, (_, i) => {
-    const dayDelta = delta * (i / 6);
-    const noise = (Math.random() - 0.5) * 2;
-    return { v: Math.max(1, Math.round(position + dayDelta + noise)) };
-  }).reverse();
-
-  const color = delta > 2 ? "#10b981" : delta < -2 ? "#ef4444" : "#6b7280";
+export function DeltaBadge({ delta, label }: DeltaBadgeProps) {
+  const isPositive = delta > 0;
+  const isNegative = delta < 0;
 
   return (
-    <ResponsiveContainer width="100%" height={32}>
-      <LineChart data={data}>
-        <Line
-          type="monotone"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1.5}
-          dot={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium",
+        isPositive && "bg-green-50 text-green-700",
+        isNegative && "bg-red-50 text-red-700",
+        !isPositive && !isNegative && "bg-gray-50 text-gray-500"
+      )}
+    >
+      {isPositive ? <ArrowUpRight className="h-3 w-3" /> : isNegative ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+      {delta !== 0 ? Math.abs(delta).toFixed(1) : "—"}
+      {label && <span className="ml-0.5">{label}</span>}
+    </span>
   );
 }
+
+// Keep SparklineChart export for backward compatibility if imported elsewhere
+export { DeltaBadge as SparklineChart };

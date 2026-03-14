@@ -21,16 +21,22 @@ export default async function KeywordsPage() {
     difficulty: number | null;
     opportunity_score: number | null;
     last_checked_at: string | null;
+    source?: string | null;
   }> = [];
+  let siteId: string | null = null;
+  let hasGa4 = false;
 
   if (profile?.org_id) {
     const { data: sites } = await supabase
       .from("sites")
-      .select("id")
+      .select("id, ga4_property_id")
       .eq("org_id", profile.org_id)
       .eq("is_sandbox", false);
 
     if (sites && sites.length > 0) {
+      siteId = sites[0].id;
+      hasGa4 = !!sites[0].ga4_property_id;
+
       const { data: kwData } = await supabase
         .from("keywords")
         .select("*")
@@ -48,7 +54,7 @@ export default async function KeywordsPage() {
         description="Track and optimize your keyword rankings"
       />
       <div className="p-6">
-        <KeywordsTable keywords={keywords} />
+        <KeywordsTable keywords={keywords} siteId={siteId} hasGa4={hasGa4} />
       </div>
     </div>
   );

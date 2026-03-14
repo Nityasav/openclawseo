@@ -1,53 +1,153 @@
 import { createClient } from "@/lib/supabase/server";
+import { fetchGscData } from "@/lib/integrations/gsc";
+import { decrypt } from "@/lib/encryption";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { RankingsView } from "./rankings-view";
+
+export interface LiveRankingRow {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  clicks_delta: number;
+  impressions_delta: number;
+  ctr_delta: number;
+  position_delta: number;
+}
+
+function formatDate(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
 
 export default async function RankingsPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    return (
+      <div>
+        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
+        <div className="p-6 text-center text-gray-400">Please sign in to view rankings.</div>
+      </div>
+    );
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("org_id")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .single();
 
-  let keywords: Array<{
-    id: string;
-    keyword: string;
-    current_position: number | null;
-    previous_position: number | null;
-    search_volume: number | null;
-  }> = [];
-
-  if (profile?.org_id) {
-    const { data: sites } = await supabase
-      .from("sites")
-      .select("id")
-      .eq("org_id", profile.org_id)
-      .eq("is_sandbox", false);
-
-    if (sites?.length) {
-      const { data } = await supabase
-        .from("keywords")
-        .select("id, keyword, current_position, previous_position, search_volume")
-        .in("site_id", sites.map((s) => s.id))
-        .order("current_position", { ascending: true })
-        .limit(200);
-      keywords = data ?? [];
-    }
+  if (!profile?.org_id) {
+    return (
+      <div>
+        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
+        <div className="p-6 text-center text-gray-400">No organization found.</div>
+      </div>
+    );
   }
 
-  const significantDrops = keywords.filter((kw) => {
-    const delta = (kw.previous_position ?? 0) - (kw.current_position ?? 0);
-    return delta < -5;
-  });
+  // Get GSC integration
+  const { data: integration } = await supabase
+    .from("integrations")
+    .select("access_token, refresh_token")
+    .eq("org_id", profile.org_id)
+    .eq("provider", "gsc")
+    .single();
+
+  // Get the first non-sandbox site with a GSC property
+  const { data: sites } = await supabase
+    .from("sites")
+    .select("id, domain, gsc_property_url")
+    .eq("org_id", profile.org_id)
+    .eq("is_sandbox", false)
+    .not("gsc_property_url", "is", null);
+
+  const site = sites?.[0];
+
+  if (!integration?.access_token || !site?.gsc_property_url) {
+    return (
+      <div>
+        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
+        <div className="p-6 text-center text-gray-400">
+          <p className="text-lg font-medium">No GSC data available</p>
+          <p className="mt-1 text-sm">Connect Google Search Console and select a property in Settings to see live ranking data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  let rankings: LiveRankingRow[] = [];
+  let error: string | null = null;
+
+  try {
+    const accessToken = decrypt(integration.access_token);
+    const refreshToken = integration.refresh_token ? decrypt(integration.refresh_token) : "";
+
+    const now = new Date();
+    // GSC data has ~3 day lag
+    const currentEnd = new Date(now);
+    currentEnd.setDate(currentEnd.getDate() - 3);
+    const currentStart = new Date(currentEnd);
+    currentStart.setDate(currentStart.getDate() - 7);
+    const prevEnd = new Date(currentStart);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevStart.getDate() - 7);
+
+    const [currentRows, prevRows] = await Promise.all([
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(currentStart), formatDate(currentEnd), { dimensions: ["query"], rowLimit: 500 }),
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(prevStart), formatDate(prevEnd), { dimensions: ["query"], rowLimit: 500 }),
+    ]);
+
+    // Build lookup for previous period
+    const prevMap = new Map<string, { clicks: number; impressions: number; ctr: number; position: number }>();
+    for (const row of prevRows) {
+      const query = row.keys?.[0] ?? "";
+      prevMap.set(query, {
+        clicks: row.clicks ?? 0,
+        impressions: row.impressions ?? 0,
+        ctr: row.ctr ?? 0,
+        position: row.position ?? 0,
+      });
+    }
+
+    // Merge current with previous
+    for (const row of currentRows) {
+      const query = row.keys?.[0] ?? "";
+      const prev = prevMap.get(query);
+      rankings.push({
+        query,
+        clicks: row.clicks ?? 0,
+        impressions: row.impressions ?? 0,
+        ctr: row.ctr ?? 0,
+        position: row.position ?? 0,
+        clicks_delta: (row.clicks ?? 0) - (prev?.clicks ?? 0),
+        impressions_delta: (row.impressions ?? 0) - (prev?.impressions ?? 0),
+        ctr_delta: (row.ctr ?? 0) - (prev?.ctr ?? 0),
+        position_delta: (prev?.position ?? row.position ?? 0) - (row.position ?? 0), // positive = improved
+      });
+    }
+
+    // Sort by impressions descending
+    rankings.sort((a, b) => b.impressions - a.impressions);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to fetch GSC data";
+  }
 
   return (
     <div>
-      <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
+      <DashboardHeader title="Rankings" description="Live Google Search Console data — last 7 days vs previous 7 days" />
       <div className="p-6">
-        <RankingsView keywords={keywords} significantDrops={significantDrops} />
+        {error ? (
+          <div className="text-center text-red-500">
+            <p className="font-medium">Error loading GSC data</p>
+            <p className="mt-1 text-sm">{error}</p>
+          </div>
+        ) : (
+          <RankingsView rankings={rankings} siteId={site.id} domain={site.domain} />
+        )}
       </div>
     </div>
   );

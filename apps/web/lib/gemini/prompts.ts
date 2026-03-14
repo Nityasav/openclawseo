@@ -134,6 +134,71 @@ Return a JSON object with:
 
 Return ONLY valid JSON.`;
 
+export const PROMPT_KEYWORD_DISCOVERY = (
+  domain: string,
+  ga4TopPages: string,
+  trafficSources: string,
+  websiteContent: string
+) => `${SYSTEM_PROMPT_SEO_ANALYST}
+
+Analyze the following data for the website ${domain} and discover high-value keywords they should be targeting.
+
+TOP LANDING PAGES (from Google Analytics):
+${ga4TopPages}
+
+TRAFFIC SOURCES:
+${trafficSources}
+
+WEBSITE CONTENT (homepage + key pages):
+${websiteContent}
+
+Based on the site's content, industry, and traffic patterns, identify 30-50 keywords they should track and optimize for.
+For each keyword, estimate realistic search volume and difficulty based on the industry.
+
+Return a JSON array:
+[
+  {
+    "keyword": string,
+    "search_volume_estimate": number,
+    "difficulty_estimate": number (0-100),
+    "opportunity_score": number (0-100),
+    "reasoning": string,
+    "recommended_page": string (existing page URL or "new content needed")
+  }
+]
+
+Return ONLY valid JSON, no markdown.`;
+
+export const PROMPT_LLM_CITATION_CHECK = (
+  domain: string,
+  keywords: string[]
+) => `${SYSTEM_PROMPT_GEO_SPECIALIST}
+
+For each of the following keywords, imagine you are an LLM (like ChatGPT, Perplexity, or Gemini) answering a user query.
+Determine whether the website "${domain}" would likely be cited or referenced in that answer.
+
+Consider:
+- Is this domain an authority on the topic?
+- Does the domain's content align with the keyword intent?
+- Would an LLM likely include this site as a source?
+- How competitive is the keyword space?
+
+Keywords to check:
+${keywords.map((k, i) => `${i + 1}. ${k}`).join('\n')}
+
+Return a JSON array:
+[
+  {
+    "keyword": string,
+    "is_cited": boolean,
+    "citation_likelihood": number (0-100, how likely an LLM would cite this domain),
+    "reasoning": string (brief explanation),
+    "improvement_tip": string (one actionable tip to improve citation likelihood)
+  }
+]
+
+Return ONLY valid JSON, no markdown.`;
+
 export const PROMPT_CONTENT_KEYWORD_FIX = (keyword: string, position: number, pageData: string) =>
   `${SYSTEM_PROMPT_SEO_ANALYST}
 
