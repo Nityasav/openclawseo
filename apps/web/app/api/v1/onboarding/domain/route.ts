@@ -28,23 +28,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create organization" }, { status: 500 });
     }
 
-    // Upsert so re-entering the same domain is idempotent
+    // Check if site already exists for this org+domain
+    const { data: existing } = await supabase
+      .from("sites")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("domain", domain)
+      .maybeSingle();
+
+    if (existing?.id) {
+      return NextResponse.json({ siteId: existing.id, domain });
+    }
+
+    // Insert new site
     const { data: site, error } = await supabase
       .from("sites")
-      .upsert(
-        { org_id: orgId, domain, is_sandbox: false },
-        { onConflict: "org_id,domain" }
-      )
+      .insert({ org_id: orgId, domain, is_sandbox: false })
       .select("id")
       .single();
 
     if (error || !site) {
+      console.error("sites insert error:", error);
       return NextResponse.json({ error: error?.message ?? "Failed to save domain" }, { status: 500 });
     }
 
     return NextResponse.json({ siteId: site.id, domain });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("onboarding/domain error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

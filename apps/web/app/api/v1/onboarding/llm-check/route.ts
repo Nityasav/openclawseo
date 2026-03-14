@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     await supabase
       .from("geo_records")
-      .upsert(rows, { onConflict: "site_id,query,llm_source" });
+      .insert(rows);
 
     return NextResponse.json({ results });
   } catch (err) {

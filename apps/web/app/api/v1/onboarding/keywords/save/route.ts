@@ -26,24 +26,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rows = keywords.map((k) => ({
-      site_id: siteId,
-      keyword: k.keyword,
-      search_volume: k.search_volume_estimate ?? null,
-      difficulty: k.difficulty_estimate ?? null,
-      opportunity_score: k.opportunity_score ?? null,
-      source: "discovery",
-    }));
-
-    const { error } = await supabase
-      .from("keywords")
-      .upsert(rows, { onConflict: "site_id,keyword" });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    // Insert keywords one by one, skipping duplicates
+    let saved = 0;
+    for (const k of keywords) {
+      const { error } = await supabase
+        .from("keywords")
+        .insert({
+          site_id: siteId,
+          keyword: k.keyword,
+          search_volume: k.search_volume_estimate ?? null,
+          difficulty: k.difficulty_estimate ?? null,
+          opportunity_score: k.opportunity_score ?? null,
+          source: "discovery",
+        });
+      if (!error) saved++;
     }
 
-    return NextResponse.json({ saved: rows.length });
+    return NextResponse.json({ saved });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error";
     return NextResponse.json({ error: message }, { status: 500 });
