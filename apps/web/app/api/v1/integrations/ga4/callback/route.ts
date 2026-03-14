@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { exchangeGA4CodeForTokens } from "@/lib/integrations/ga4";
 import { encrypt } from "@/lib/encryption";
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -25,14 +26,15 @@ export async function GET(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id) {
-      return NextResponse.redirect(`${origin}/dashboard/settings?error=No+org&tab=integrations`);
+    const orgId = profile?.org_id ?? await ensureUserProfile(user);
+    if (!orgId) {
+      return NextResponse.redirect(`${origin}/dashboard/settings?error=Failed+to+create+organization&tab=integrations`);
     }
 
     const tokens = await exchangeGA4CodeForTokens(code);
 
     await supabase.from("integrations").upsert({
-      org_id: profile.org_id,
+      org_id: orgId,
       provider: "ga4",
       access_token: tokens.access_token ? encrypt(tokens.access_token) : null,
       refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,

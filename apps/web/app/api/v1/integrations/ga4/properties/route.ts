@@ -1,14 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
-import { listGA4Properties } from "@/lib/integrations/ga4";
 import { decrypt } from "@/lib/encryption";
-import { NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
+import { NextResponse } from "next/server";
+import { createGA4OAuth2Client } from "@/lib/integrations/ga4";
 
 export async function GET() {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: profile } = await supabase
@@ -17,88 +20,65 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id) {
-      return NextResponse.json({ error: "No organization" }, { status: 400 });
+    const orgId = profile?.org_id ?? await ensureUserProfile(user);
+    if (!orgId) {
+      return NextResponse.json({ success: false, error: "No organization found — please sign out and sign in again" }, { status: 403 });
     }
 
     const { data: integration } = await supabase
       .from("integrations")
       .select("access_token, refresh_token")
-      .eq("org_id", profile.org_id)
+      .eq("org_id", orgId)
       .eq("provider", "ga4")
       .single();
 
-    if (!integration?.access_token || !integration?.refresh_token) {
-      return NextResponse.json({ error: "GA4 not connected" }, { status: 400 });
+    if (!integration?.access_token) {
+      return NextResponse.json({ success: false, error: "GA4 not connected" }, { status: 404 });
     }
 
     const accessToken = decrypt(integration.access_token);
-    const refreshToken = decrypt(integration.refresh_token);
-    const properties = await listGA4Properties(accessToken, refreshToken);
+    const refreshToken = integration.refresh_token ? decrypt(integration.refresh_token) : "";
 
-    return NextResponse.json({ properties });
+    // Use Analytics Admin API to list GA4 accounts and properties
+    const oauth2Client = createGA4OAuth2Client();
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
+
+    // List all accounts
+    const accountsRes = await analyticsAdmin.accounts.list();
+    const accounts = accountsRes.data.accounts ?? [];
+
+    // For each account, list properties
+    const results: Array<{ accountId: string; accountName: string; propertyId: string; propertyName: string }> = [];
+
+    await Promise.all(
+      accounts.map(async (account) => {
+        try {
+          const propsRes = await analyticsAdmin.properties.list({
+            filter: `parent:${account.name}`,
+          });
+          const props = propsRes.data.properties ?? [];
+          for (const prop of props) {
+            results.push({
+              accountId: account.name ?? "",
+              accountName: account.displayName ?? "",
+              propertyId: prop.name?.replace("properties/", "") ?? "",
+              propertyName: prop.displayName ?? "",
+            });
+          }
+        } catch {
+          // Skip accounts we can't access
+        }
+      })
+    );
+
+    return NextResponse.json({ success: true, data: results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to fetch GA4 properties";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.org_id) {
-      return NextResponse.json({ error: "No organization" }, { status: 400 });
-    }
-
-    const body = await request.json();
-    const propertyId = body.property_id;
-    if (!propertyId) {
-      return NextResponse.json({ error: "property_id is required" }, { status: 400 });
-    }
-
-    // Find existing site for this org or create one
-    const { data: existingSite } = await supabase
-      .from("sites")
-      .select("id")
-      .eq("org_id", profile.org_id)
-      .eq("is_sandbox", false)
-      .limit(1)
-      .single();
-
-    if (existingSite) {
-      const { error } = await supabase
-        .from("sites")
-        .update({ ga4_property_id: propertyId })
-        .eq("id", existingSite.id);
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-    } else {
-      const { error } = await supabase.from("sites").insert({
-        org_id: profile.org_id,
-        domain: "default",
-        ga4_property_id: propertyId,
-        is_sandbox: false,
-      });
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-    }
-
-    return NextResponse.json({ success: true, ga4_property_id: propertyId });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to save property";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
