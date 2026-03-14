@@ -1,10 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchGscFull, type GscFullData } from "@/lib/integrations/gsc";
+import { fetchGscFull, type GscFullData, type GscRow } from "@/lib/integrations/gsc";
 import { decrypt } from "@/lib/encryption";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { RankingsView } from "./rankings-view";
 import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import Link from "next/link";
+
+export interface LiveRankingRow {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  clicks_delta: number;
+  impressions_delta: number;
+  ctr_delta: number;
+  position_delta: number;
+}
 
 export interface PageRow {
   page: string;
@@ -28,6 +40,54 @@ export interface DateRow {
 
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
+}
+
+function buildRankings(current: GscRow[], prev: GscRow[]): LiveRankingRow[] {
+  const prevMap = new Map(prev.map((r) => [r.keys?.[0] ?? "", r]));
+  return current.map((r) => {
+    const query = r.keys?.[0] ?? "";
+    const p = prevMap.get(query);
+    return {
+      query,
+      clicks: r.clicks ?? 0,
+      impressions: r.impressions ?? 0,
+      ctr: r.ctr ?? 0,
+      position: r.position ?? 0,
+      clicks_delta: (r.clicks ?? 0) - (p?.clicks ?? 0),
+      impressions_delta: (r.impressions ?? 0) - (p?.impressions ?? 0),
+      ctr_delta: (r.ctr ?? 0) - (p?.ctr ?? 0),
+      position_delta: (p?.position ?? r.position ?? 0) - (r.position ?? 0),
+    };
+  });
+}
+
+function buildPages(current: GscRow[], prev: GscRow[]): PageRow[] {
+  const prevMap = new Map(prev.map((r) => [r.keys?.[0] ?? "", r]));
+  return current.map((r) => {
+    const page = r.keys?.[0] ?? "";
+    const p = prevMap.get(page);
+    return {
+      page,
+      clicks: r.clicks ?? 0,
+      impressions: r.impressions ?? 0,
+      ctr: r.ctr ?? 0,
+      position: r.position ?? 0,
+      clicks_delta: (r.clicks ?? 0) - (p?.clicks ?? 0),
+      impressions_delta: (r.impressions ?? 0) - (p?.impressions ?? 0),
+      ctr_delta: (r.ctr ?? 0) - (p?.ctr ?? 0),
+      position_delta: (p?.position ?? r.position ?? 0) - (r.position ?? 0),
+    };
+  });
+}
+
+function buildDailyData(rows: GscRow[]): DateRow[] {
+  return rows.map((r) => ({
+    date: r.keys?.[0] ?? "",
+    clicks: r.clicks ?? 0,
+    impressions: r.impressions ?? 0,
+    ctr: r.ctr ?? 0,
+    position: r.position ?? 0,
+  }));
 }
 
 export default async function RankingsPage({
@@ -144,13 +204,11 @@ export default async function RankingsPage({
           </div>
         ) : gscData ? (
           <RankingsView
-            gscData={gscData}
-            prevGscData={prevGscData}
+            rankings={buildRankings(gscData.queries, prevGscData?.queries ?? [])}
+            pages={buildPages(gscData.pages, prevGscData?.pages ?? [])}
+            dailyData={buildDailyData(gscData.dateTrend)}
             siteId={site.id}
             domain={site.domain}
-            siteUrl={site.gsc_property_url!}
-            allSites={sites ?? []}
-            rangeDays={rangeDays}
           />
         ) : null}
       </div>
