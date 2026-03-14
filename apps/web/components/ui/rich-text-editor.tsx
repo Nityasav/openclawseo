@@ -170,7 +170,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       )}
     >
       {editor && <Toolbar editor={editor} />}
-      <div className="min-h-[220px] overflow-y-auto px-6 py-4 text-foreground">
+      <div className="min-h-[220px] overflow-y-auto px-6 py-4 text-foreground [&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-2">
         <EditorContent editor={editor} />
       </div>
     </div>
