@@ -11,13 +11,23 @@ import { cn } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import type { LiveRankingRow, PageRow, DateRow } from "./page";
+import type {
+  LiveRankingRow,
+  PageRow,
+  DateRow,
+  DeviceRow,
+  CountryRow,
+  QueryPageRow,
+} from "./page";
 import { useRouter } from "next/navigation";
 
 interface RankingsViewProps {
   rankings: LiveRankingRow[];
   pages: PageRow[];
   dailyData: DateRow[];
+  devices: DeviceRow[];
+  countries: CountryRow[];
+  queryPages: QueryPageRow[];
   siteId: string;
   domain: string;
 }
@@ -64,7 +74,7 @@ function PositionBadge({ position }: { position: number }) {
   );
 }
 
-export function RankingsView({ rankings, pages, dailyData, siteId, domain }: RankingsViewProps) {
+export function RankingsView({ rankings, pages, dailyData, devices, countries, queryPages, siteId, domain }: RankingsViewProps) {
   const [querySearch, setQuerySearch] = useState("");
   const [pageSearch, setPageSearch] = useState("");
   const [querySortField, setQuerySortField] = useState<QuerySortField>("impressions");
@@ -83,6 +93,8 @@ export function RankingsView({ rankings, pages, dailyData, siteId, domain }: Ran
   const totalImpressionsDelta = rankings.reduce((s, r) => s + r.impressions_delta, 0);
   const totalPages = pages.length;
   const pagesWithClicks = pages.filter((p) => p.clicks > 0).length;
+  const deviceCount = devices.length;
+  const countryCount = countries.length;
 
   // Position buckets
   const positionBuckets = useMemo(() => {
@@ -231,10 +243,12 @@ export function RankingsView({ rankings, pages, dailyData, siteId, domain }: Ran
       </div>
 
       {/* Pages indexed */}
-      <div className="flex gap-4 text-sm text-gray-600">
-        <span>📄 <strong>{totalPages}</strong> pages indexed</span>
+      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <span>📄 <strong>{totalPages}</strong> pages with impressions/clicks from Search</span>
         <span>🖱️ <strong>{pagesWithClicks}</strong> pages with clicks</span>
-        <span>📉 <strong>{totalPages - pagesWithClicks}</strong> pages with 0 clicks</span>
+        <span>📉 <strong>{totalPages - pagesWithClicks}</strong> pages with 0 clicks (impressions only)</span>
+        <span>📱 <strong>{deviceCount}</strong> devices</span>
+        <span>🌎 <strong>{countryCount}</strong> countries</span>
       </div>
 
       {/* Alerts */}
@@ -294,11 +308,12 @@ export function RankingsView({ rankings, pages, dailyData, siteId, domain }: Ran
         </Card>
       )}
 
-      {/* Queries + Pages tabs */}
+      {/* Queries + Pages + Query/Page tabs */}
       <Tabs defaultValue="queries">
         <TabsList>
           <TabsTrigger value="queries">Queries ({filteredQueries.length})</TabsTrigger>
           <TabsTrigger value="pages">Pages ({filteredPages.length})</TabsTrigger>
+          <TabsTrigger value="queryPages">Query × Page ({queryPages.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="queries">
@@ -376,6 +391,7 @@ export function RankingsView({ rankings, pages, dailyData, siteId, domain }: Ran
                       <SortTh field="clicks" label="Clicks" onSort={(f) => handlePageSort(f as PageSortField)} sortField={pageSortField} sortDir={pageSortDir} />
                       <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500">Δ</th>
                       <SortTh field="impressions" label="Impressions" onSort={(f) => handlePageSort(f as PageSortField)} sortField={pageSortField} sortDir={pageSortDir} />
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500">Δ</th>
                       <SortTh field="ctr" label="CTR" onSort={(f) => handlePageSort(f as PageSortField)} sortField={pageSortField} sortDir={pageSortDir} />
                       <SortTh field="position" label="Avg Pos" onSort={(f) => handlePageSort(f as PageSortField)} sortField={pageSortField} sortDir={pageSortDir} />
                       <th className="pb-3 text-left text-xs font-semibold uppercase text-gray-500">Indexed</th>
@@ -392,18 +408,63 @@ export function RankingsView({ rankings, pages, dailyData, siteId, domain }: Ran
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
                         <td className="py-2.5 pr-4"><DeltaCell value={r.clicks_delta} /></td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
+                        <td className="py-2.5 pr-4"><DeltaCell value={r.impressions_delta} /></td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
                         <td className="py-2.5 pr-4"><PositionBadge position={r.position} /></td>
                         <td className="py-2.5">
                           {r.impressions > 0
-                            ? <Badge variant="outline" className="border-green-300 text-green-700 text-xs">Indexed</Badge>
-                            : <Badge variant="outline" className="text-xs text-gray-400">Unknown</Badge>}
+                            ? <Badge variant="outline" className="border-green-300 text-green-700 text-xs">Search-visible</Badge>
+                            : <Badge variant="outline" className="text-xs text-gray-400">No impressions</Badge>}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {filteredPages.length === 0 && <p className="py-8 text-center text-sm text-gray-400">No pages match.</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="queryPages">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-base">Query × Page Pairs</CardTitle>
+                <CardDescription>Every query + landing page combination reported by GSC</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500 min-w-[160px]">Query</th>
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500 min-w-[220px]">Page</th>
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500">Clicks</th>
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500">Impressions</th>
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase text-gray-500">CTR</th>
+                      <th className="pb-3 text-left text-xs font-semibold uppercase text-gray-500">Avg Pos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {queryPages.map((r) => (
+                      <tr key={`${r.query}-${r.page}`} className="hover:bg-gray-50">
+                        <td className="py-2.5 pr-4 max-w-xs truncate" title={r.query}>{r.query}</td>
+                        <td className="py-2.5 pr-4 font-mono text-xs max-w-sm truncate text-blue-700" title={r.page}>
+                          <a href={r.page} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            {r.page.replace(/^https?:\/\/[^/]+/, "") || "/"}
+                          </a>
+                        </td>
+                        <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
+                        <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
+                        <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
+                        <td className="py-2.5"><PositionBadge position={r.position} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {queryPages.length === 0 && <p className="py-8 text-center text-sm text-gray-400">No query/page combinations.</p>}
               </div>
             </CardContent>
           </Card>

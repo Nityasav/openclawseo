@@ -38,6 +38,31 @@ export interface DateRow {
   position: number;
 }
 
+export interface DeviceRow {
+  device: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+export interface CountryRow {
+  country: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+export interface QueryPageRow {
+  query: string;
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
@@ -121,6 +146,9 @@ export default async function RankingsPage() {
   let rankings: LiveRankingRow[] = [];
   let pages: PageRow[] = [];
   let dailyData: DateRow[] = [];
+  let devicesData: DeviceRow[] = [];
+  let countriesData: CountryRow[] = [];
+  let queryPagesData: QueryPageRow[] = [];
   let error: string | null = null;
 
   try {
@@ -201,6 +229,45 @@ export default async function RankingsPage() {
     }
     dailyData.sort((a, b) => a.date.localeCompare(b.date));
 
+    // Build devices
+    for (const r of currentData.devices) {
+      devicesData.push({
+        device: r.keys?.[0] ?? "",
+        clicks: r.clicks ?? 0,
+        impressions: r.impressions ?? 0,
+        ctr: r.ctr ?? 0,
+        position: r.position ?? 0,
+      });
+    }
+    devicesData.sort((a, b) => b.clicks - a.clicks);
+
+    // Build countries
+    for (const r of currentData.countries) {
+      countriesData.push({
+        country: r.keys?.[0] ?? "",
+        clicks: r.clicks ?? 0,
+        impressions: r.impressions ?? 0,
+        ctr: r.ctr ?? 0,
+        position: r.position ?? 0,
+      });
+    }
+    countriesData.sort((a, b) => b.clicks - a.clicks);
+
+    // Build query x page pairs
+    for (const r of currentData.queryPages) {
+      const query = r.keys?.[0] ?? "";
+      const page = r.keys?.[1] ?? "";
+      queryPagesData.push({
+        query,
+        page,
+        clicks: r.clicks ?? 0,
+        impressions: r.impressions ?? 0,
+        ctr: r.ctr ?? 0,
+        position: r.position ?? 0,
+      });
+    }
+    queryPagesData.sort((a, b) => b.impressions - a.impressions);
+
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to fetch GSC data";
   }
@@ -222,6 +289,9 @@ export default async function RankingsPage() {
             rankings={rankings}
             pages={pages}
             dailyData={dailyData}
+            devices={devicesData}
+            countries={countriesData}
+            queryPages={queryPagesData}
             siteId={site.id}
             domain={site.domain}
           />
