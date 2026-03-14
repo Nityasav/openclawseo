@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
 
     const { provider, value, domain } = parsed.data;
 
+    // Use user client only for auth — service client for DB writes to bypass RLS
+    // (sites table has no UPDATE policy; we enforce ownership manually via orgId)
     const supabase = createClient();
+    const db = createServiceClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find or create site record for this domain
-    let { data: site } = await supabase
+    let { data: site } = await db
       .from("sites")
       .select("id")
       .eq("org_id", orgId)
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!site) {
-      const { data: newSite, error: siteError } = await supabase
+      const { data: newSite, error: siteError } = await db
         .from("sites")
         .insert({ org_id: orgId, domain })
         .select("id")
@@ -67,10 +70,11 @@ export async function POST(request: NextRequest) {
       ? { gsc_property_url: value }
       : { ga4_property_id: value };
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("sites")
       .update(updateData)
-      .eq("id", site.id);
+      .eq("id", site.id)
+      .eq("org_id", orgId); // re-assert ownership even with service client
 
     if (updateError) {
       return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });

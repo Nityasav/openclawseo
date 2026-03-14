@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { TriggerAgentSchema } from "@/types/schemas";
-import { z } from "zod";
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,22 +78,20 @@ export async function POST(request: NextRequest) {
         }),
       }).catch((err) => console.error("Agent trigger failed:", err));
     } else {
-      // Simulate completion for demo/dev purposes
-      setTimeout(async () => {
-        await supabase
-          .from("agent_runs")
-          .update({
-            status: "complete",
-            completed_at: new Date().toISOString(),
-            result_json: {
-              summary: "Demo run completed successfully",
-              keywords_analyzed: 50,
-              opportunities_found: 8,
-            },
-            tokens_used: 1250,
-          })
-          .eq("id", agentRun.id);
-      }, 3000);
+      // Demo/dev mode: complete synchronously — setTimeout doesn't survive serverless teardown
+      await supabase
+        .from("agent_runs")
+        .update({
+          status: "complete",
+          completed_at: new Date().toISOString(),
+          result_json: {
+            summary: "Demo audit completed successfully",
+            keywords_analyzed: 50,
+            opportunities_found: 8,
+          },
+          tokens_used: 1250,
+        })
+        .eq("id", agentRun.id);
     }
 
     return NextResponse.json({
