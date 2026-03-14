@@ -71,6 +71,7 @@ class OrchestratorGraph:
         logger.info(f"Running GEO graph for site {self.site_id}")
         initial_state = {
             "site_id": self.site_id,
+            "domain": "",  # extracted from gsc_data page URLs in fetch_target_queries
             "gsc_data": self.gsc_data,
             "target_queries": [],
             "citation_checks": [],

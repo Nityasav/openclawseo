@@ -5,13 +5,19 @@ Nodes: fetch_gsc_data → fetch_ga4_data → analyze_keyword_gaps → rank_track
 
 import os
 import json
+import math
 import re
 import logging
 from typing import TypedDict, Optional, Any
 from datetime import datetime, timedelta
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import google.generativeai as genai
 from langgraph.graph import StateGraph, END
+
+from clients.dataforseo import get_keyword_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +104,51 @@ Return ONLY valid JSON, no markdown."""
     except Exception as e:
         logger.error(f"Keyword gap analysis failed: {e}")
         return {**state, "keyword_gaps": [], "error": str(e)}
+
+
+def enrich_keywords_with_dataforseo(state: SEOState) -> SEOState:
+    """Replace Gemini-estimated volume/difficulty with real DataForSEO data."""
+    keyword_gaps = state.get("keyword_gaps", [])
+    if not keyword_gaps:
+        return state
+
+    keywords = [gap.get("keyword", "") for gap in keyword_gaps if gap.get("keyword")]
+    logger.info("Enriching %d keywords with DataForSEO data", len(keywords))
+
+    metrics = get_keyword_metrics(keywords)
+    if not metrics:
+        logger.warning("DataForSEO returned no data — keeping Gemini estimates")
+        return state
+
+    enriched = []
+    for gap in keyword_gaps:
+        kw = gap.get("keyword", "")
+        data = metrics.get(kw)
+        if data:
+            position = gap.get("current_position", 50)
+            volume = data["search_volume"]
+            difficulty = data["difficulty"]
+            # Recalculate opportunity score with real data
+            # Normalize volume: log scale so small/large volumes compare fairly (100k → 100)
+            volume_score = min(100, math.log10(max(volume, 1)) / math.log10(100000) * 100)
+            opp = min(100, ((100 - position) / 100) * (volume_score / 100) * (1 - difficulty / 100) * 100)
+            enriched.append({
+                **gap,
+                "search_volume": volume,
+                "search_volume_estimate": volume,   # keep field name consistent
+                "difficulty": round(difficulty, 1),
+                "difficulty_estimate": round(difficulty, 1),
+                "cpc": data["cpc"],
+                "competition": data["competition"],
+                "opportunity_score": round(opp, 1),
+                "data_source": "dataforseo",
+            })
+        else:
+            enriched.append({**gap, "data_source": "gemini_estimate"})
+
+    matched = sum(1 for g in enriched if g.get("data_source") == "dataforseo")
+    logger.info("DataForSEO enriched %d/%d keywords", matched, len(enriched))
+    return {**state, "keyword_gaps": enriched}
 
 
 def rank_tracker(state: SEOState) -> SEOState:
@@ -194,13 +245,15 @@ def build_seo_graph() -> StateGraph:
     workflow.add_node("fetch_gsc_data", fetch_gsc_data)
     workflow.add_node("fetch_ga4_data", fetch_ga4_data)
     workflow.add_node("analyze_keyword_gaps", analyze_keyword_gaps)
+    workflow.add_node("enrich_keywords_with_dataforseo", enrich_keywords_with_dataforseo)
     workflow.add_node("rank_tracker", rank_tracker)
     workflow.add_node("generate_seo_report", generate_seo_report)
 
     workflow.set_entry_point("fetch_gsc_data")
     workflow.add_edge("fetch_gsc_data", "fetch_ga4_data")
     workflow.add_edge("fetch_ga4_data", "analyze_keyword_gaps")
-    workflow.add_edge("analyze_keyword_gaps", "rank_tracker")
+    workflow.add_edge("analyze_keyword_gaps", "enrich_keywords_with_dataforseo")
+    workflow.add_edge("enrich_keywords_with_dataforseo", "rank_tracker")
     workflow.add_edge("rank_tracker", "generate_seo_report")
     workflow.add_edge("generate_seo_report", END)
 
