@@ -1,50 +1,56 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container max-w-4xl px-4 py-16 text-center">
-        <div className="mb-8 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-          🚀 Autonomous SEO & GEO Platform
-        </div>
-        <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white px-6 py-20">
+      <div className="w-full max-w-2xl flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <p className="text-xs font-medium tracking-[0.2em] uppercase text-white/30 mb-6">
+          Autonomous SEO & GEO Platform
+        </p>
+        <h1 className="text-4xl font-light tracking-tight text-white sm:text-5xl mb-4">
           SEO that runs{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            itself
-          </span>
+          <span className="text-white/90">itself</span>
         </h1>
-        <p className="mb-10 text-xl text-gray-600 dark:text-gray-300">
+        <p className="text-white/40 text-base sm:text-lg max-w-xl mb-12">
           SEOClaw autonomously tracks rankings, finds keyword gaps, and optimizes
           your content for LLM citation visibility — 24/7, no manual work required.
         </p>
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button asChild size="lg" className="px-8">
-            <Link href="/auth/login">Get Started Free</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="px-8">
-            <Link href="/sandbox/demo">Try Live Demo</Link>
-          </Button>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/auth/login"
+            className="group flex items-center gap-3 px-8 py-3.5 bg-white text-black rounded-xl font-medium text-sm transition-all hover:bg-white/90"
+          >
+            Get Started Free
+            <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
+            href="/sandbox/demo"
+            className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-medium text-sm border border-white/10 text-white/70 hover:text-white hover:border-white/25 transition-all"
+          >
+            Try Live Demo
+          </Link>
         </div>
-        <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-3 text-3xl">🎯</div>
-            <h3 className="mb-2 font-semibold">Keyword Intelligence</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-3 w-full max-w-3xl">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-left transition-all duration-300 hover:border-white/15 hover:bg-white/[0.04]">
+            <div className="mb-3 text-2xl opacity-80">🎯</div>
+            <h3 className="text-white font-medium text-sm mb-2">Keyword Intelligence</h3>
+            <p className="text-white/40 text-xs leading-relaxed">
               AI-powered keyword gap analysis finds opportunities you&apos;re missing
             </p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-3 text-3xl">🤖</div>
-            <h3 className="mb-2 font-semibold">GEO Optimization</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-left transition-all duration-300 hover:border-white/15 hover:bg-white/[0.04]">
+            <div className="mb-3 text-2xl opacity-80">🤖</div>
+            <h3 className="text-white font-medium text-sm mb-2">GEO Optimization</h3>
+            <p className="text-white/40 text-xs leading-relaxed">
               Track and improve your visibility in ChatGPT, Perplexity, and Gemini
             </p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="mb-3 text-3xl">📊</div>
-            <h3 className="mb-2 font-semibold">Autonomous Reports</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-left transition-all duration-300 hover:border-white/15 hover:bg-white/[0.04]">
+            <div className="mb-3 text-2xl opacity-80">📊</div>
+            <h3 className="text-white font-medium text-sm mb-2">Autonomous Reports</h3>
+            <p className="text-white/40 text-xs leading-relaxed">
               Weekly SEO reports delivered to Slack automatically
             </p>
           </div>

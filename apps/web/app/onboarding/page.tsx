@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import UniqueLoading from "@/components/ui/morph-loading";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -408,11 +409,8 @@ function Step3Keywords({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border border-white/10 animate-ping" />
-            <div className="absolute inset-2 rounded-full border border-white/20 animate-spin" />
-          </div>
+        <div className="flex w-full min-h-[280px] flex-col items-center justify-center gap-4 py-12">
+          <UniqueLoading variant="morph" size="lg" lightDots className="flex-shrink-0" />
           <p className="text-white/30 text-sm animate-pulse">Scanning your domain…</p>
         </div>
       ) : error ? (
@@ -563,11 +561,8 @@ function Step4LLMVisibility({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border border-white/10 animate-ping" />
-            <div className="absolute inset-2 rounded-full border border-white/20 animate-spin" />
-          </div>
+        <div className="flex w-full min-h-[280px] flex-col items-center justify-center gap-4 py-12">
+          <UniqueLoading variant="morph" size="lg" lightDots className="flex-shrink-0" />
           <p className="text-white/30 text-sm animate-pulse">Checking AI citation coverage…</p>
         </div>
       ) : (
@@ -693,11 +688,8 @@ function Step5Rankings({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border border-white/10 animate-ping" />
-            <div className="absolute inset-2 rounded-full border border-white/20 animate-spin" />
-          </div>
+        <div className="flex w-full min-h-[280px] flex-col items-center justify-center gap-4 py-12">
+          <UniqueLoading variant="morph" size="lg" lightDots className="flex-shrink-0" />
           <p className="text-white/30 text-sm animate-pulse">Fetching rankings…</p>
         </div>
       ) : !hasGsc || rankings.length === 0 ? (
@@ -844,7 +836,10 @@ function OnboardingContent() {
           <Step5Rankings
             siteId={siteId}
             domain={domain}
-            onFinish={() => router.push("/dashboard/overview")}
+            onFinish={() => {
+              // Full navigation so dashboard layout re-runs and sees the site created in step 1
+              window.location.href = "/dashboard/overview";
+            }}
           />
         )}
         {/* Fallback if siteId missing (e.g. hard refresh mid-flow) */}
