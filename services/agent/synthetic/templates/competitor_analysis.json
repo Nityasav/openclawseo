@@ -1,0 +1,7 @@
+{
+  "template": "competitor_analysis",
+  "description": "Competitor analysis template with keyword gap data",
+  "keyword_count": 150,
+  "competitor_count": 2,
+  "keyword_gap_per_competitor": 30
+}

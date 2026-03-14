@@ -1,0 +1,27 @@
+{
+  "template": "site_audit",
+  "description": "Full site SEO audit template",
+  "keyword_count": 200,
+  "position_distribution": {
+    "mean": 18,
+    "std": 12
+  },
+  "quick_wins": {
+    "count": 30,
+    "position_range": [11, 15]
+  },
+  "critical_drops": {
+    "count": 3,
+    "min_drop": 6
+  },
+  "gsc": {
+    "impressions_range": [1000, 50000],
+    "ctr_range": [1, 8],
+    "position_range": [1, 50]
+  },
+  "ga4": {
+    "monthly_sessions_range": [5000, 50000],
+    "organic_share_range": [0.55, 0.70],
+    "conversion_rate_range": [0.02, 0.04]
+  }
+}

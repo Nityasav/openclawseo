@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  sandbox-base:
+    build:
+      context: ../services/agent
+      dockerfile: Dockerfile
+    environment:
+      - SANDBOX_MODE=true
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    labels:
+      - "seoclaw.sandbox=true"

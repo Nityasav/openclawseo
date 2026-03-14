@@ -1,0 +1,7 @@
+{
+  "template": "content_strategy",
+  "description": "Content strategy template with keyword clusters",
+  "keyword_count": 100,
+  "cluster_count": 8,
+  "keywords_per_cluster": 5
+}
