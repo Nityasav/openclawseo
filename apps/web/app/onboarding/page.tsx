@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -383,7 +383,7 @@ function Step3Keywords({
     } catch {
       // non-blocking
     }
-    onNext([...selected]);
+    onNext(Array.from(selected));
     setSaving(false);
   }
 
@@ -752,6 +752,14 @@ function Step5Rankings({
 // ─── Main Onboarding Page ─────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingContent />
+    </Suspense>
+  );
+}
+
+function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
