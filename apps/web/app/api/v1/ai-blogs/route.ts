@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
-        .eq("org_id", profile.org_id)
+        .eq("org_id", orgId)
         .select()
         .single();
 
