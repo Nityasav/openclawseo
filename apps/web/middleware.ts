@@ -58,35 +58,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // New user detection: redirect to onboarding if no sites exist
-  if (pathname === "/dashboard/overview" && user) {
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.org_id) {
-        const { data: sites } = await supabase
-          .from("sites")
-          .select("id")
-          .eq("org_id", profile.org_id)
-          .eq("is_sandbox", false)
-          .limit(1);
-
-        if (!sites || sites.length === 0) {
-          const url = request.nextUrl.clone();
-          url.pathname = "/onboarding";
-          url.searchParams.set("step", "1");
-          return NextResponse.redirect(url);
-        }
-      }
-    } catch {
-      // If DB check fails, let through to dashboard normally
-    }
-  }
-
   return supabaseResponse;
 }
 
