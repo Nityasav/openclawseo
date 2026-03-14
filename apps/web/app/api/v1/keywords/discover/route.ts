@@ -90,10 +90,10 @@ export async function POST() {
           sourceMap.set(source, (sourceMap.get(source) ?? 0) + sessions);
         }
 
-        const topPages = [...pageMap.entries()]
+        const topPages = Array.from(pageMap.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 20);
-        const topSources = [...sourceMap.entries()]
+        const topSources = Array.from(sourceMap.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 10);
 
