@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TrendingDown, TrendingUp } from "lucide-react";
 
@@ -25,36 +24,40 @@ export function KpiCard({
   const isNegative = trend !== undefined && trend < 0;
 
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {(description || trend !== undefined) && (
-          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-            {trend !== undefined && (
-              <span
-                className={cn(
-                  "flex items-center gap-0.5 font-medium",
-                  isPositive && "text-green-600",
-                  isNegative && "text-red-600"
-                )}
-              >
-                {isPositive ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : isNegative ? (
-                  <TrendingDown className="h-3 w-3" />
-                ) : null}
-                {Math.abs(trend)}%
-              </span>
-            )}
-            {trendLabel && <span>{trendLabel}</span>}
-            {description && !trendLabel && <span>{description}</span>}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div
+      className={cn(
+        "animate-in fade-in slide-in-from-bottom-4 duration-500",
+        "rounded-lg border border-white/[0.06] bg-white/[0.02] p-5",
+        className
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] uppercase tracking-widest text-white/30">{title}</p>
+        {icon && <div className="text-white/20">{icon}</div>}
+      </div>
+      <div className="mt-3 text-3xl font-light text-white">{value}</div>
+      {(description || trend !== undefined) && (
+        <div className="mt-2 flex items-center gap-1 text-xs text-white/30">
+          {trend !== undefined && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 font-medium",
+                isPositive && "text-emerald-400",
+                isNegative && "text-red-400"
+              )}
+            >
+              {isPositive ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : isNegative ? (
+                <TrendingDown className="h-3 w-3" />
+              ) : null}
+              {Math.abs(trend)}%
+            </span>
+          )}
+          {trendLabel && <span>{trendLabel}</span>}
+          {description && !trendLabel && <span>{description}</span>}
+        </div>
+      )}
+    </div>
   );
 }

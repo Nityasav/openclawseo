@@ -4,7 +4,7 @@ export default function KeywordsError({ error, reset }: { error: Error; reset: (
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
       <h2 className="text-lg font-semibold text-red-600">Failed to load keywords</h2>
-      <p className="text-sm text-gray-600">{error.message}</p>
+      <p className="text-sm text-white/40">{error.message}</p>
       <Button onClick={reset} variant="outline">Try again</Button>
     </div>
   );

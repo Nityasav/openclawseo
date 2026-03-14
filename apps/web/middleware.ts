@@ -50,6 +50,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Protect onboarding route — must be authenticated
+  if (pathname.startsWith("/onboarding") && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }
 

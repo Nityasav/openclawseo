@@ -100,10 +100,10 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
             </ResponsiveContainer>
             <div className="-mt-12 text-center">
               <p className="text-4xl font-bold">{geoScore}</p>
-              <p className="text-sm text-gray-500">out of 100</p>
+              <p className="text-sm text-white/40">out of 100</p>
             </div>
             {geoRecords.length === 0 && (
-              <p className="mt-4 text-center text-sm text-gray-400">
+              <p className="mt-4 text-center text-sm text-white/30">
                 No GEO data yet. Run a GEO check to see results.
               </p>
             )}
@@ -128,7 +128,7 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
                     Copy
                   </Button>
                 </div>
-                <pre className="overflow-x-auto rounded bg-gray-50 p-2 text-xs text-gray-700 max-h-24">
+                <pre className="overflow-x-auto rounded bg-white/[0.04] p-2 text-xs text-white/50 max-h-24">
                   {schema.code}
                 </pre>
               </div>
@@ -152,14 +152,14 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
         )}
         <CardContent>
           {geoRecords.length === 0 ? (
-            <div className="py-8 text-center text-gray-400">
+            <div className="py-8 text-center text-white/30">
               <p>No GEO records yet. Click &quot;Check LLM Citations&quot; to analyze your keyword visibility.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
+                  <tr className="border-b text-left text-xs font-medium uppercase text-white/40">
                     <th className="pb-3 pr-4">Query</th>
                     <th className="pb-3 pr-4">LLM Source</th>
                     <th className="pb-3 pr-4">Cited</th>
@@ -169,7 +169,7 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
                 </thead>
                 <tbody className="divide-y">
                   {geoRecords.map((rec) => (
-                    <tr key={rec.id} className="hover:bg-gray-50">
+                    <tr key={rec.id} className="hover:bg-white/[0.02]">
                       <td className="py-3 pr-4 max-w-xs truncate font-medium" title={rec.query}>
                         {rec.query}
                       </td>
@@ -189,10 +189,10 @@ export function GeoView({ geoRecords, geoScore }: { geoRecords: GeoRecord[]; geo
                         {rec.schema_injected ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
-                          <XCircle className="h-4 w-4 text-gray-300" />
+                          <XCircle className="h-4 w-4 text-white/20" />
                         )}
                       </td>
-                      <td className="py-3 text-xs text-gray-400">
+                      <td className="py-3 text-xs text-white/30">
                         {new Date(rec.checked_at).toLocaleDateString()}
                       </td>
                     </tr>

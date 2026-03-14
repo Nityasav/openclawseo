@@ -117,7 +117,7 @@ function PropertyPicker({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+      <div className="flex items-center gap-2 text-sm text-white/40 py-2">
         <Loader2 className="h-4 w-4 animate-spin" />
         Fetching your {provider === "gsc" ? "Search Console" : "Analytics"} properties...
       </div>
@@ -142,7 +142,7 @@ function PropertyPicker({
   if (items.length === 0) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-gray-500">No properties found. Make sure you have access in {provider === "gsc" ? "Google Search Console" : "Google Analytics"}.</p>
+        <p className="text-sm text-white/40">No properties found. Make sure you have access in {provider === "gsc" ? "Google Search Console" : "Google Analytics"}.</p>
         <Button size="sm" variant="outline" onClick={fetchProperties}>
           <RefreshCw className="mr-2 h-3 w-3" /> Refresh
         </Button>
@@ -163,11 +163,11 @@ function PropertyPicker({
                 "w-full text-left rounded-md px-3 py-2 text-sm transition-colors",
                 selected === item.value
                   ? "bg-blue-50 border border-blue-200 text-blue-900"
-                  : "hover:bg-gray-50"
+                  : "hover:bg-white/[0.04]"
               )}
             >
               <p className="font-medium truncate">{item.label}</p>
-              <p className="text-xs text-gray-500 truncate">{item.sub}</p>
+              <p className="text-xs text-white/40 truncate">{item.sub}</p>
             </button>
           ))}
         </div>
@@ -181,7 +181,7 @@ function PropertyPicker({
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
         />
-        <p className="text-xs text-gray-400 mt-1">Auto-filled from selection — edit if needed</p>
+        <p className="text-xs text-white/30 mt-1">Auto-filled from selection — edit if needed</p>
       </div>
 
       <Button
@@ -243,7 +243,7 @@ function IntegrationCard({
   );
 }
 
-function SlackIntegration({ isConnected }: { isConnected: boolean }) {
+function DiscordIntegration({ isConnected }: { isConnected: boolean }) {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -252,13 +252,13 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch("/api/v1/integrations/slack/connect", {
+      const res = await fetch("/api/v1/integrations/discord/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ webhook_url: webhookUrl, site_id: "00000000-0000-0000-0000-000000000000" }),
+        body: JSON.stringify({ webhook_url: webhookUrl }),
       });
       const data = await res.json();
-      if (data.success) toast({ title: "Slack connected!" });
+      if (data.success) toast({ title: "Discord connected!" });
       else toast({ title: "Failed", description: data.error, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -268,13 +268,9 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   async function test() {
     setTesting(true);
     try {
-      const res = await fetch("/api/v1/integrations/slack/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site_id: "00000000-0000-0000-0000-000000000000" }),
-      });
+      const res = await fetch("/api/v1/integrations/discord/test", { method: "POST" });
       const data = await res.json();
-      if (data.success) toast({ title: "Test message sent to Slack!" });
+      if (data.success) toast({ title: "Test message sent to Discord!" });
       else toast({ title: "Failed", description: data.error, variant: "destructive" });
     } finally {
       setTesting(false);
@@ -284,13 +280,16 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   return (
     <div className="space-y-3">
       <div>
-        <Label htmlFor="webhook">Incoming Webhook URL</Label>
+        <Label htmlFor="discord-webhook">Webhook URL</Label>
         <Input
-          id="webhook"
-          placeholder="https://hooks.slack.com/services/..."
+          id="discord-webhook"
+          placeholder="https://discord.com/api/webhooks/..."
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
         />
+        <p className="text-xs text-white/30 mt-1">
+          Discord channel → Edit Channel → Integrations → Webhooks → Create Webhook
+        </p>
       </div>
       <div className="flex gap-2">
         <Button onClick={save} disabled={saving || !webhookUrl} size="sm">
@@ -400,14 +399,14 @@ function SitesManager({ sites: initialSites, orgId }: { sites: SettingsViewProps
         </Button>
       </div>
       {sites.length === 0 ? (
-        <p className="text-sm text-gray-400">No sites added yet.</p>
+        <p className="text-sm text-white/30">No sites added yet.</p>
       ) : (
         <div className="space-y-2">
           {sites.map((site) => (
             <div key={site.id} className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="font-medium">{site.domain}</p>
-                <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                <div className="flex gap-3 mt-1 text-xs text-white/40">
                   <span>GSC: {site.gsc_property_url ? "✓" : "—"}</span>
                   <span>GA4: {site.ga4_property_id ? "✓" : "—"}</span>
                 </div>
@@ -487,7 +486,7 @@ export function SettingsView({
                 <div>
                   <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
                   <PropertyPicker key={`gsc-${refreshKey}`} provider="gsc" onSaved={handlePropertySaved} />
-                  <a href="/api/v1/integrations/gsc/connect" className="text-xs text-gray-400 hover:underline mt-2 block">
+                  <a href="/api/v1/integrations/gsc/connect" className="text-xs text-white/30 hover:underline mt-2 block">
                     Reconnect / change account
                   </a>
                 </div>
@@ -504,19 +503,19 @@ export function SettingsView({
                 <div>
                   <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
                   <PropertyPicker key={`ga4-${refreshKey}`} provider="ga4" onSaved={handlePropertySaved} />
-                  <a href="/api/v1/integrations/ga4/connect" className="text-xs text-gray-400 hover:underline mt-2 block">
+                  <a href="/api/v1/integrations/ga4/connect" className="text-xs text-white/30 hover:underline mt-2 block">
                     Reconnect / change account
                   </a>
                 </div>
               ) : undefined}
             </IntegrationCard>
             <IntegrationCard
-              name="Slack"
-              description="Receive automated SEO reports in your Slack workspace"
-              provider="slack"
-              isConnected={connectedProviders.includes("slack")}
+              name="Discord"
+              description="Receive automated SEO reports in your Discord channel"
+              provider="discord"
+              isConnected={connectedProviders.includes("discord")}
             >
-              <SlackIntegration isConnected={connectedProviders.includes("slack")} />
+              <DiscordIntegration isConnected={connectedProviders.includes("discord")} />
             </IntegrationCard>
             <IntegrationCard
               name="Framer CMS"
@@ -556,7 +555,7 @@ export function SettingsView({
                     Invite
                   </Button>
                 </div>
-                <p className="text-sm text-gray-400">Team management coming soon.</p>
+                <p className="text-sm text-white/30">Team management coming soon.</p>
               </div>
             </CardContent>
           </Card>

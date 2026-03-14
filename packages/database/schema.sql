@@ -180,6 +180,10 @@ CREATE POLICY "Org members can read sites" ON sites
 CREATE POLICY "Org admins/members can insert sites" ON sites
   FOR INSERT WITH CHECK (org_id = get_user_org_id() AND get_user_role() IN ('admin', 'member'));
 
+CREATE POLICY "Org admins/members can update sites" ON sites
+  FOR UPDATE USING (org_id = get_user_org_id() AND get_user_role() IN ('admin', 'member'))
+  WITH CHECK (org_id = get_user_org_id() AND get_user_role() IN ('admin', 'member'));
+
 CREATE POLICY "Org admins can delete sites" ON sites
   FOR DELETE USING (org_id = get_user_org_id() AND get_user_role() = 'admin');
 

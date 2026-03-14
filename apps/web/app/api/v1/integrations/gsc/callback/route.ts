@@ -8,15 +8,23 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const state = searchParams.get("state") ?? "";
+  const isOnboarding = state.includes("source=onboarding");
+
+  const errorRedirect = isOnboarding
+    ? `${origin}/onboarding?step=2&error=${encodeURIComponent(error ?? "oauth_error")}`
+    : `${origin}/dashboard/settings?error=${encodeURIComponent(error ?? "No code")}&tab=integrations`;
 
   if (error) {
-    return NextResponse.redirect(
-      `${origin}/dashboard/settings?error=${encodeURIComponent(error)}&tab=integrations`
-    );
+    return NextResponse.redirect(errorRedirect);
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/dashboard/settings?error=No+code&tab=integrations`);
+    return NextResponse.redirect(
+      isOnboarding
+        ? `${origin}/onboarding?step=2&error=No+code`
+        : `${origin}/dashboard/settings?error=No+code&tab=integrations`
+    );
   }
 
   try {
@@ -51,11 +59,17 @@ export async function GET(request: NextRequest) {
         : null,
     }, { onConflict: "org_id,provider" });
 
-    return NextResponse.redirect(`${origin}/dashboard/settings?success=gsc_connected&tab=integrations`);
+    const successRedirect = isOnboarding
+      ? `${origin}/onboarding?step=2&connected=gsc`
+      : `${origin}/dashboard/settings?success=gsc_connected&tab=integrations`;
+
+    return NextResponse.redirect(successRedirect);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Connection failed";
     return NextResponse.redirect(
-      `${origin}/dashboard/settings?error=${encodeURIComponent(message)}&tab=integrations`
+      isOnboarding
+        ? `${origin}/onboarding?step=2&error=${encodeURIComponent(message)}`
+        : `${origin}/dashboard/settings?error=${encodeURIComponent(message)}&tab=integrations`
     );
   }
 }

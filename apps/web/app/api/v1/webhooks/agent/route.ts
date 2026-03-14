@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { AgentWebhookSchema } from "@/types/schemas";
-import { buildSlackReportMessage, sendSlackMessage } from "@/lib/integrations/slack";
+import { buildDiscordReportMessage, sendDiscordMessage } from "@/lib/integrations/discord";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
           .select()
           .single();
 
-        // Send Slack notification
+        // Send Discord notification
         const { data: site } = await supabase
           .from("sites")
           .select("domain, org_id")
@@ -69,24 +69,37 @@ export async function POST(request: NextRequest) {
             .from("integrations")
             .select("config_json")
             .eq("org_id", site.org_id)
-            .eq("provider", "slack")
+            .eq("provider", "discord")
             .single();
 
           const config = integration?.config_json as { webhook_url?: string } | null;
           if (config?.webhook_url) {
-            const message = buildSlackReportMessage({
+            const seoReport = resultData.seo_report as Record<string, unknown> | undefined;
+            const geoReport = resultData.geo_report as Record<string, unknown> | undefined;
+
+            const message = buildDiscordReportMessage({
               title: `SEO Report: ${site.domain}`,
-              summary: typeof resultData.summary === "string" ? resultData.summary : "Run completed",
+              summary: typeof resultData.summary === "string" ? resultData.summary : "Audit complete.",
               domain: site.domain,
-              healthScore: typeof resultData.overall_health_score === "number" ? resultData.overall_health_score : undefined,
+              healthScore: typeof seoReport?.overall_health_score === "number" ? seoReport.overall_health_score : undefined,
+              geoScore: typeof geoReport?.llm_visibility_score === "number" ? geoReport.llm_visibility_score : undefined,
+              actionItems: Array.isArray(seoReport?.action_items)
+                ? (seoReport.action_items as Array<{ action: string; effort?: string }>)
+                : undefined,
+              topWins: Array.isArray(seoReport?.top_wins)
+                ? (seoReport.top_wins as Array<{ title: string }>)
+                : undefined,
+              criticalIssues: Array.isArray(seoReport?.critical_issues)
+                ? (seoReport.critical_issues as Array<{ title: string; urgency?: string }>)
+                : undefined,
             });
 
-            await sendSlackMessage(config.webhook_url, message).catch(console.error);
+            await sendDiscordMessage(config.webhook_url, message).catch(console.error);
 
             if (report) {
               await supabase
                 .from("reports")
-                .update({ delivered_to_slack: true })
+                .update({ delivered_to_discord: true })
                 .eq("id", report.id);
             }
           }

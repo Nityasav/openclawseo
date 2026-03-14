@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -9,14 +8,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 
 interface OverviewChartsProps {
   keywords: { current_position: number }[];
 }
 
-// Generate mock trend data for display purposes
 function generateTrendData() {
   const data = [];
   for (let i = 29; i >= 0; i--) {
@@ -35,57 +32,64 @@ export function OverviewCharts({ keywords }: OverviewChartsProps) {
   const trendData = generateTrendData();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Keyword Position Trend (30 days)</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+      <div className="px-5 py-4 border-b border-white/[0.06]">
+        <h3 className="text-xs font-medium text-white/60 uppercase tracking-widest">Position Trend — 30 days</h3>
+      </div>
+      <div className="p-5">
         {keywords.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-gray-400">
-            <p>No keyword data yet. Connect Google Search Console to get started.</p>
+          <div className="flex h-40 items-center justify-center">
+            <p className="text-xs text-white/20">No keyword data yet. Connect Google Search Console to get started.</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }}
                 tickLine={false}
                 axisLine={false}
                 interval={4}
               />
               <YAxis
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }}
                 tickLine={false}
                 axisLine={false}
                 reversed
                 domain={[1, 30]}
               />
               <Tooltip
-                contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                contentStyle={{
+                  background: "#111",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "6px",
+                  fontSize: "11px",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+                itemStyle={{ color: "rgba(255,255,255,0.6)" }}
+                labelStyle={{ color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}
               />
-              <Legend />
               <Line
                 type="monotone"
                 dataKey="avgPosition"
                 name="Avg Position"
-                stroke="#3b82f6"
-                strokeWidth={2}
+                stroke="rgba(255,255,255,0.6)"
+                strokeWidth={1.5}
                 dot={false}
               />
               <Line
                 type="monotone"
                 dataKey="top10Keywords"
                 name="Top 10 Keywords"
-                stroke="#10b981"
-                strokeWidth={2}
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth={1.5}
                 dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

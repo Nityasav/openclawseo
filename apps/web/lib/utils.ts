@@ -35,16 +35,16 @@ export function formatNumber(n: number): string {
 }
 
 export function getPositionBadgeColor(position: number): string {
-  if (position <= 3) return "bg-green-100 text-green-800";
-  if (position <= 10) return "bg-blue-100 text-blue-800";
-  if (position <= 20) return "bg-yellow-100 text-yellow-800";
-  return "bg-gray-100 text-gray-800";
+  if (position <= 3) return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+  if (position <= 10) return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+  if (position <= 20) return "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
+  return "bg-white/[0.06] text-white/40";
 }
 
 export function getOpportunityColor(score: number): string {
-  if (score >= 70) return "text-green-600";
-  if (score >= 40) return "text-yellow-600";
-  return "text-gray-500";
+  if (score >= 70) return "text-emerald-400";
+  if (score >= 40) return "text-yellow-400";
+  return "text-white/30";
 }
 
 export function truncate(str: string, length: number): string {

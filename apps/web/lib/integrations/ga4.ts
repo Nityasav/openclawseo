@@ -15,13 +15,13 @@ export function createGA4OAuth2Client() {
   );
 }
 
-export function getGa4AuthUrl(): string {
+export function getGa4AuthUrl(source = ""): string {
   const oauth2Client = createGA4OAuth2Client();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
-    state: "ga4",
+    state: source ? `ga4:source=${source}` : "ga4",
     include_granted_scopes: true,
   });
 }
