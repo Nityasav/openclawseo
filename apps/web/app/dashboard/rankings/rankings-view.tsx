@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  AlertTriangle, ArrowUpRight, ArrowDownRight, Minus,
+  AlertTriangle, ArrowUpRight, ArrowDownRight,
   Search, Download, RefreshCw, Globe, Monitor, Smartphone, Tablet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -141,15 +141,8 @@ export function RankingsView({
   const prevQueryMap = buildPrevMap(prevGscData?.queries ?? [], 1);
 
   interface QueryRow {
-    query: string;
-    clicks: number;
-    impressions: number;
-    ctr: number;
-    position: number;
-    prevClicks: number;
-    prevImpressions: number;
-    prevCtr: number;
-    prevPosition: number;
+    query: string; clicks: number; impressions: number; ctr: number; position: number;
+    prevClicks: number; prevImpressions: number; prevCtr: number; prevPosition: number;
   }
 
   const queryRows: QueryRow[] = gscData.queries
@@ -158,20 +151,15 @@ export function RankingsView({
       const prev = prevQueryMap.get(r.keys?.[0] ?? "");
       return {
         query: r.keys?.[0] ?? "",
-        clicks: r.clicks ?? 0,
-        impressions: r.impressions ?? 0,
-        ctr: r.ctr ?? 0,
-        position: r.position ?? 0,
-        prevClicks: prev?.clicks ?? 0,
-        prevImpressions: prev?.impressions ?? 0,
-        prevCtr: prev?.ctr ?? 0,
-        prevPosition: prev?.position ?? 0,
+        clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
+        ctr: r.ctr ?? 0, position: r.position ?? 0,
+        prevClicks: prev?.clicks ?? 0, prevImpressions: prev?.impressions ?? 0,
+        prevCtr: prev?.ctr ?? 0, prevPosition: prev?.position ?? 0,
       };
     });
 
   const qTable = useSortableTable(queryRows, "impressions");
 
-  // Position buckets
   const top3 = queryRows.filter((r) => r.position <= 3).length;
   const top10 = queryRows.filter((r) => r.position > 3 && r.position <= 10).length;
   const pos11_20 = queryRows.filter((r) => r.position > 10 && r.position <= 20).length;
@@ -180,44 +168,32 @@ export function RankingsView({
   // ── Pages table ─────────────────────────────────────────────────
   const prevPageMap = buildPrevMap(prevGscData?.pages ?? [], 1);
 
-  interface PageRow {
-    page: string;
-    clicks: number;
-    impressions: number;
-    ctr: number;
-    position: number;
-    prevClicks: number;
-    prevImpressions: number;
-    prevCtr: number;
-    prevPosition: number;
+  interface PageRowT {
+    page: string; clicks: number; impressions: number; ctr: number; position: number;
+    prevClicks: number; prevImpressions: number; prevCtr: number; prevPosition: number;
   }
 
-  const pageRows: PageRow[] = gscData.pages
+  const pageRows: PageRowT[] = gscData.pages
     .filter((r) => (r.keys?.[0] ?? "").toLowerCase().includes(pageSearch.toLowerCase()))
     .map((r) => {
       const prev = prevPageMap.get(r.keys?.[0] ?? "");
       return {
         page: r.keys?.[0] ?? "",
-        clicks: r.clicks ?? 0,
-        impressions: r.impressions ?? 0,
-        ctr: r.ctr ?? 0,
-        position: r.position ?? 0,
-        prevClicks: prev?.clicks ?? 0,
-        prevImpressions: prev?.impressions ?? 0,
-        prevCtr: prev?.ctr ?? 0,
-        prevPosition: prev?.position ?? 0,
+        clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
+        ctr: r.ctr ?? 0, position: r.position ?? 0,
+        prevClicks: prev?.clicks ?? 0, prevImpressions: prev?.impressions ?? 0,
+        prevCtr: prev?.ctr ?? 0, prevPosition: prev?.position ?? 0,
       };
     });
 
   const pTable = useSortableTable(pageRows, "clicks");
 
-  // ── Dropped queries ─────────────────────────────────────────────
+  // ── Dropped queries & low CTR opps ──────────────────────────────
   const droppedQueries = queryRows
     .filter((r) => r.prevPosition > 0 && r.position - r.prevPosition > 3)
     .sort((a, b) => (b.position - b.prevPosition) - (a.position - a.prevPosition))
     .slice(0, 20);
 
-  // Low CTR opportunities (pos 1-10, CTR < 2%)
   const lowCtrOpp = queryRows
     .filter((r) => r.position <= 10 && r.ctr < 0.02 && r.impressions > 50)
     .sort((a, b) => b.impressions - a.impressions)
@@ -226,28 +202,33 @@ export function RankingsView({
   // ── Device breakdown ────────────────────────────────────────────
   const deviceData = gscData.devices.map((r) => ({
     device: r.keys?.[0] ?? "unknown",
-    clicks: r.clicks ?? 0,
-    impressions: r.impressions ?? 0,
-    ctr: r.ctr ?? 0,
-    position: r.position ?? 0,
+    clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
+    ctr: r.ctr ?? 0, position: r.position ?? 0,
   }));
 
   // ── Country breakdown ───────────────────────────────────────────
   const countryData = gscData.countries.map((r) => ({
     country: (r.keys?.[0] ?? "unknown").toUpperCase(),
-    clicks: r.clicks ?? 0,
-    impressions: r.impressions ?? 0,
-    ctr: r.ctr ?? 0,
-    position: r.position ?? 0,
+    clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
+    ctr: r.ctr ?? 0, position: r.position ?? 0,
   })).sort((a, b) => b.clicks - a.clicks);
 
   const cTable = useSortableTable(countryData, "clicks");
 
+  // ── Query × Page pairs ──────────────────────────────────────────
+  const queryPageRows = gscData.queryPages.map((r) => ({
+    query: r.keys?.[0] ?? "",
+    page: r.keys?.[1] ?? "",
+    clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
+    ctr: r.ctr ?? 0, position: r.position ?? 0,
+  })).sort((a, b) => b.impressions - a.impressions);
+
+  const qpTable = useSortableTable(queryPageRows, "impressions");
+
   // ── Date trend ──────────────────────────────────────────────────
   const trendData = gscData.dateTrend.map((r) => ({
-    date: r.keys?.[0]?.slice(5) ?? "", // MM-DD
-    clicks: r.clicks ?? 0,
-    impressions: r.impressions ?? 0,
+    date: r.keys?.[0]?.slice(5) ?? "",
+    clicks: r.clicks ?? 0, impressions: r.impressions ?? 0,
     ctr: Number(((r.ctr ?? 0) * 100).toFixed(2)),
     position: Number((r.position ?? 0).toFixed(1)),
   }));
@@ -256,21 +237,16 @@ export function RankingsView({
   function exportCsv(type: "queries" | "pages" | "countries") {
     let header = "";
     let rows: string[] = [];
-
     if (type === "queries") {
       header = "query,clicks,impressions,ctr,avg_position\n";
-      rows = qTable.sorted.map((r) =>
-        `"${r.query}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
+      rows = qTable.sorted.map((r) => `"${r.query}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
     } else if (type === "pages") {
       header = "page,clicks,impressions,ctr,avg_position\n";
-      rows = pTable.sorted.map((r) =>
-        `"${r.page}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
+      rows = pTable.sorted.map((r) => `"${r.page}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
     } else {
       header = "country,clicks,impressions,ctr,avg_position\n";
-      rows = cTable.sorted.map((r) =>
-        `"${r.country}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
+      rows = cTable.sorted.map((r) => `"${r.country}",${r.clicks},${r.impressions},${pct(r.ctr)},${pos(r.position)}`);
     }
-
     const blob = new Blob([header + rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -322,12 +298,7 @@ export function RankingsView({
         </div>
         <div className="flex items-center gap-2">
           {[7, 28, 90].map((d) => (
-            <Button
-              key={d}
-              variant={rangeDays === d ? "default" : "outline"}
-              size="sm"
-              onClick={() => changeRange(d)}
-            >
+            <Button key={d} variant={rangeDays === d ? "default" : "outline"} size="sm" onClick={() => changeRange(d)}>
               {d}d
             </Button>
           ))}
@@ -432,11 +403,12 @@ export function RankingsView({
         </Card>
       )}
 
-      {/* Tabs: Queries / Pages / Devices / Countries */}
+      {/* Tabs */}
       <Tabs defaultValue="queries">
         <TabsList className="mb-4">
           <TabsTrigger value="queries">Queries ({queryRows.length})</TabsTrigger>
           <TabsTrigger value="pages">Pages ({pageRows.length})</TabsTrigger>
+          <TabsTrigger value="queryPages">Query × Page ({queryPageRows.length})</TabsTrigger>
           <TabsTrigger value="devices">Devices</TabsTrigger>
           <TabsTrigger value="countries">Countries</TabsTrigger>
         </TabsList>
@@ -456,12 +428,7 @@ export function RankingsView({
             <CardContent>
               <div className="mb-4 relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-white/20" strokeWidth={1.5} />
-                <Input
-                  placeholder="Filter queries..."
-                  value={querySearch}
-                  onChange={(e) => setQuerySearch(e.target.value)}
-                  className="pl-9"
-                />
+                <Input placeholder="Filter queries..." value={querySearch} onChange={(e) => setQuerySearch(e.target.value)} className="pl-9" />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -483,32 +450,20 @@ export function RankingsView({
                       <tr key={r.query} className="hover:bg-white/[0.02]">
                         <td className="py-2.5 pr-4 font-medium max-w-xs truncate" title={r.query}>{r.query}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
-                        <td className="py-2.5 pr-4">
-                          {r.prevClicks > 0 && <Delta curr={r.clicks} prev={r.prevClicks} />}
-                        </td>
+                        <td className="py-2.5 pr-4">{r.prevClicks > 0 && <Delta curr={r.clicks} prev={r.prevClicks} />}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
-                        <td className="py-2.5 pr-4">
-                          {r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}
-                        </td>
+                        <td className="py-2.5 pr-4">{r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
+                        <td className="py-2.5 pr-4">{r.prevCtr > 0 && <Delta curr={r.ctr} prev={r.prevCtr} isPercent />}</td>
                         <td className="py-2.5 pr-4">
-                          {r.prevCtr > 0 && <Delta curr={r.ctr} prev={r.prevCtr} isPercent />}
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
                         </td>
-                        <td className="py-2.5 pr-4">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>
-                            {pos(r.position)}
-                          </span>
-                        </td>
-                        <td className="py-2.5">
-                          {r.prevPosition > 0 && <Delta curr={r.position} prev={r.prevPosition} invert />}
-                        </td>
+                        <td className="py-2.5">{r.prevPosition > 0 && <Delta curr={r.position} prev={r.prevPosition} invert />}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {qTable.sorted.length === 0 && (
-                  <p className="py-8 text-center text-xs text-white/20">No queries match your filter.</p>
-                )}
+                {qTable.sorted.length === 0 && <p className="py-8 text-center text-xs text-white/20">No queries match your filter.</p>}
               </div>
             </CardContent>
           </Card>
@@ -529,12 +484,7 @@ export function RankingsView({
             <CardContent>
               <div className="mb-4 relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-white/20" strokeWidth={1.5} />
-                <Input
-                  placeholder="Filter pages..."
-                  value={pageSearch}
-                  onChange={(e) => setPageSearch(e.target.value)}
-                  className="pl-9"
-                />
+                <Input placeholder="Filter pages..." value={pageSearch} onChange={(e) => setPageSearch(e.target.value)} className="pl-9" />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -553,24 +503,18 @@ export function RankingsView({
                   <tbody className="divide-y">
                     {pTable.sorted.map((r) => (
                       <tr key={r.page} className="hover:bg-white/[0.02]">
-                        <td className="py-2.5 pr-4 font-mono text-xs max-w-sm truncate text-blue-700" title={r.page}>
+                        <td className="py-2.5 pr-4 font-mono text-xs max-w-sm truncate text-blue-400" title={r.page}>
                           <a href={r.page} target="_blank" rel="noopener noreferrer" className="hover:underline">
                             {r.page.replace(/^https?:\/\/[^/]+/, "") || "/"}
                           </a>
                         </td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
-                        <td className="py-2.5 pr-4">
-                          {r.prevClicks > 0 && <Delta curr={r.clicks} prev={r.prevClicks} />}
-                        </td>
+                        <td className="py-2.5 pr-4">{r.prevClicks > 0 && <Delta curr={r.clicks} prev={r.prevClicks} />}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
-                        <td className="py-2.5 pr-4">
-                          {r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}
-                        </td>
+                        <td className="py-2.5 pr-4">{r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
                         <td className="py-2.5 pr-4">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>
-                            {pos(r.position)}
-                          </span>
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
                         </td>
                         <td className="py-2.5">
                           {r.impressions > 0
@@ -582,9 +526,52 @@ export function RankingsView({
                     ))}
                   </tbody>
                 </table>
-                {pTable.sorted.length === 0 && (
-                  <p className="py-8 text-center text-xs text-white/20">No pages match your filter.</p>
-                )}
+                {pTable.sorted.length === 0 && <p className="py-8 text-center text-xs text-white/20">No pages match your filter.</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* QUERY × PAGE */}
+        <TabsContent value="queryPages">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Query × Page Pairs</CardTitle>
+              <CardDescription>Every query + landing page combination reported by GSC</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <qpTable.Th f="query" label="Query" className="min-w-[160px]" />
+                      <qpTable.Th f="page" label="Page" className="min-w-[220px]" />
+                      <qpTable.Th f="clicks" label="Clicks" />
+                      <qpTable.Th f="impressions" label="Impressions" />
+                      <qpTable.Th f="ctr" label="CTR" />
+                      <qpTable.Th f="position" label="Avg Pos" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {qpTable.sorted.map((r, i) => (
+                      <tr key={`${r.query}-${r.page}-${i}`} className="hover:bg-white/[0.02]">
+                        <td className="py-2.5 pr-4 max-w-xs truncate text-white/70" title={r.query}>{r.query}</td>
+                        <td className="py-2.5 pr-4 font-mono text-xs max-w-sm truncate text-blue-400" title={r.page}>
+                          <a href={r.page} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            {r.page.replace(/^https?:\/\/[^/]+/, "") || "/"}
+                          </a>
+                        </td>
+                        <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
+                        <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
+                        <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
+                        <td className="py-2.5">
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {qpTable.sorted.length === 0 && <p className="py-8 text-center text-xs text-white/20">No query/page pairs available.</p>}
               </div>
             </CardContent>
           </Card>
@@ -613,16 +600,11 @@ export function RankingsView({
                             <span>{fmt(d.clicks)} clicks</span>
                             <span className="text-white/30">{fmt(d.impressions)} impr.</span>
                             <span className="text-white/30">{pct(d.ctr)} CTR</span>
-                            <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(d.position))}>
-                              pos {pos(d.position)}
-                            </span>
+                            <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(d.position))}>pos {pos(d.position)}</span>
                           </div>
                         </div>
                         <div className="h-2 rounded-full bg-white/[0.06]">
-                          <div
-                            className="h-2 rounded-full bg-blue-500"
-                            style={{ width: `${sharePct}%` }}
-                          />
+                          <div className="h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(sharePct, 100)}%` }} />
                         </div>
                         <p className="text-xs text-white/30 mt-0.5">{sharePct.toFixed(1)}% of total clicks</p>
                       </div>
@@ -631,7 +613,6 @@ export function RankingsView({
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Device Clicks Chart</CardTitle>
@@ -639,12 +620,12 @@ export function RankingsView({
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={deviceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="device" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                    <XAxis dataKey="device" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }} />
+                    <Tooltip contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", fontSize: "11px" }} />
                     <Bar dataKey="clicks" fill="#3b82f6" name="Clicks" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="impressions" fill="#bfdbfe" name="Impressions" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="impressions" fill="rgba(59,130,246,0.3)" name="Impressions" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -684,9 +665,7 @@ export function RankingsView({
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
                         <td className="py-2.5">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>
-                            {pos(r.position)}
-                          </span>
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
                         </td>
                       </tr>
                     ))}

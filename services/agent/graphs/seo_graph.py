@@ -5,6 +5,7 @@ Nodes: fetch_gsc_data → fetch_ga4_data → analyze_keyword_gaps → rank_track
 
 import os
 import json
+import re
 import logging
 from typing import TypedDict, Optional, Any
 from datetime import datetime, timedelta
@@ -13,6 +14,21 @@ import google.generativeai as genai
 from langgraph.graph import StateGraph, END
 
 logger = logging.getLogger(__name__)
+
+
+def extract_json(text: str):
+    """Robustly extract JSON from a Gemini response that may include markdown fences."""
+    text = text.strip()
+    # Strip ```json ... ``` or ``` ... ``` fences
+    text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
+    # If still has fences (e.g. nested), pull out the first JSON array or object
+    match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
+    if match:
+        text = match.group(0)
+    return json.loads(text)
+
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
@@ -74,16 +90,8 @@ If no GSC data is available, return mock opportunities based on common SEO patte
 Return ONLY valid JSON, no markdown."""
 
         response = gemini_model.generate_content(prompt)
-        text = response.text.strip()
-
-        # Strip markdown code fences
-        if text.startswith("```"):
-            text = "\n".join(text.split("\n")[1:])
-        if text.endswith("```"):
-            text = "\n".join(text.split("\n")[:-1])
-
-        keyword_gaps = json.loads(text)
-        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(text.split())
+        keyword_gaps = extract_json(response.text)
+        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(response.text.split())
 
         return {**state, "keyword_gaps": keyword_gaps, "tokens_used": tokens_used}
 
@@ -159,15 +167,8 @@ Return a JSON object with this structure (ONLY valid JSON):
 }}"""
 
         response = gemini_model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```"):
-            text = "\n".join(text.split("\n")[1:])
-        if text.endswith("```"):
-            text = "\n".join(text.split("\n")[:-1])
-
-        report = json.loads(text)
-        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(text.split())
+        report = extract_json(response.text)
+        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(response.text.split())
 
         return {**state, "report": report, "tokens_used": tokens_used}
 

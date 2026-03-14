@@ -82,15 +82,15 @@ function PropertyPicker({
 
   useEffect(() => {
     if (provider === "ga4" && selected) {
-      if (!domain) {
-        const prop = ga4Properties.find((p) => p.propertyId === selected);
-        if (prop?.propertyName) {
-          const cleaned = prop.propertyName.toLowerCase().replace(/[^a-z0-9.-]/g, "");
-          if (cleaned.includes(".")) setDomain(cleaned);
-        }
+      const prop = ga4Properties.find((p) => p.propertyId === selected);
+      if (prop?.propertyName) {
+        const cleaned = prop.propertyName.toLowerCase().replace(/[^a-z0-9.-]/g, "");
+        setDomain(cleaned.includes(".") ? cleaned : "");
+      } else {
+        setDomain("");
       }
     }
-  }, [selected, ga4Properties, provider, domain]);
+  }, [selected, ga4Properties, provider]);
 
   async function handleSave() {
     if (!selected || !domain) return;

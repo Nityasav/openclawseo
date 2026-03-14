@@ -5,6 +5,7 @@ Nodes: fetch_target_queries → check_llm_citations → schema_optimizer → gen
 
 import os
 import json
+import re
 import logging
 from typing import TypedDict, Optional
 
@@ -12,6 +13,19 @@ import google.generativeai as genai
 from langgraph.graph import StateGraph, END
 
 logger = logging.getLogger(__name__)
+
+
+def extract_json(text: str):
+    """Robustly extract JSON from a Gemini response that may include markdown fences."""
+    text = text.strip()
+    text = re.sub(r"^```[a-zA-Z]*\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
+    match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
+    if match:
+        text = match.group(0)
+    return json.loads(text)
+
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
 gemini_model = genai.GenerativeModel("gemini-2.5-flash")
@@ -109,15 +123,8 @@ Return a JSON array (ONLY valid JSON):
 ]"""
 
         response = gemini_model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```"):
-            text = "\n".join(text.split("\n")[1:])
-        if text.endswith("```"):
-            text = "\n".join(text.split("\n")[:-1])
-
-        schema_recommendations = json.loads(text)
-        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(text.split())
+        schema_recommendations = extract_json(response.text)
+        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(response.text.split())
 
         return {**state, "schema_recommendations": schema_recommendations, "tokens_used": tokens_used}
 
@@ -162,15 +169,8 @@ Return JSON (ONLY valid JSON):
 }}"""
 
         response = gemini_model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```"):
-            text = "\n".join(text.split("\n")[1:])
-        if text.endswith("```"):
-            text = "\n".join(text.split("\n")[:-1])
-
-        geo_report = json.loads(text)
-        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(text.split())
+        geo_report = extract_json(response.text)
+        tokens_used = state.get("tokens_used", 0) + len(prompt.split()) + len(response.text.split())
 
         return {**state, "geo_report": geo_report, "tokens_used": tokens_used}
 
