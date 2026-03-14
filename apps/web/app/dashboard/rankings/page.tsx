@@ -1,20 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { fetchGscData } from "@/lib/integrations/gsc";
+import { fetchGscFull, type GscFullData } from "@/lib/integrations/gsc";
 import { decrypt } from "@/lib/encryption";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { RankingsView } from "./rankings-view";
-
-export interface LiveRankingRow {
-  query: string;
-  clicks: number;
-  impressions: number;
-  ctr: number;
-  position: number;
-  clicks_delta: number;
-  impressions_delta: number;
-  ctr_delta: number;
-  position_delta: number;
-}
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
+import Link from "next/link";
 
 export interface PageRow {
   page: string;
@@ -40,15 +30,19 @@ function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
-export default async function RankingsPage() {
+export default async function RankingsPage({
+  searchParams,
+}: {
+  searchParams?: { range?: string; site?: string };
+}) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return (
       <div>
-        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
-        <div className="p-6 text-center text-gray-400">Please sign in to view rankings.</div>
+        <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
+        <div className="p-6 text-center text-gray-400">Please sign in.</div>
       </div>
     );
   }
@@ -59,10 +53,12 @@ export default async function RankingsPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile?.org_id) {
+  const orgId = profile?.org_id ?? await ensureUserProfile(user);
+
+  if (!orgId) {
     return (
       <div>
-        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
+        <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
         <div className="p-6 text-center text-gray-400">No organization found.</div>
       </div>
     );
@@ -71,40 +67,68 @@ export default async function RankingsPage() {
   const { data: integration } = await supabase
     .from("integrations")
     .select("access_token, refresh_token")
-    .eq("org_id", profile.org_id)
+    .eq("org_id", orgId)
     .eq("provider", "gsc")
     .single();
 
   const { data: sites } = await supabase
     .from("sites")
     .select("id, domain, gsc_property_url")
-    .eq("org_id", profile.org_id)
+    .eq("org_id", orgId)
     .eq("is_sandbox", false)
     .not("gsc_property_url", "is", null);
 
-  const site = sites?.[0];
+  const site = searchParams?.site
+    ? sites?.find((s) => s.id === searchParams.site) ?? sites?.[0]
+    : sites?.[0];
 
   if (!integration?.access_token || !site?.gsc_property_url) {
     return (
       <div>
-        <DashboardHeader title="Rankings" description="Monitor your SERP positions over time" />
-        <div className="p-6 text-center text-gray-400">
-          <p className="text-lg font-medium">No GSC data available</p>
-          <p className="mt-1 text-sm">Connect Google Search Console and select a property in Settings to see live ranking data.</p>
+        <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
+        <div className="p-6 text-center">
+          <p className="text-lg font-medium text-gray-700">No GSC data available</p>
+          <p className="mt-1 text-sm text-gray-400">
+            Connect Google Search Console and select a property in{" "}
+            <Link href="/dashboard/settings?tab=integrations" className="text-blue-600 hover:underline">
+              Settings
+            </Link>{" "}
+            to see live ranking data.
+          </p>
         </div>
       </div>
     );
   }
 
+<<<<<<< HEAD
   let rankings: LiveRankingRow[] = [];
   let pages: PageRow[] = [];
   let dailyData: DateRow[] = [];
+=======
+  const rangeDays = parseInt(searchParams?.range ?? "28", 10);
+  const now = new Date();
+  // GSC has ~3 day lag
+  const endDate = new Date(now);
+  endDate.setDate(endDate.getDate() - 3);
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - rangeDays);
+
+  // Previous period for delta calculation
+  const prevEndDate = new Date(startDate);
+  prevEndDate.setDate(prevEndDate.getDate() - 1);
+  const prevStartDate = new Date(prevEndDate);
+  prevStartDate.setDate(prevStartDate.getDate() - rangeDays);
+
+  let gscData: GscFullData | null = null;
+  let prevGscData: GscFullData | null = null;
+>>>>>>> refs/remotes/origin/main
   let error: string | null = null;
 
   try {
     const accessToken = decrypt(integration.access_token);
     const refreshToken = integration.refresh_token ? decrypt(integration.refresh_token) : "";
 
+<<<<<<< HEAD
     const now = new Date();
     // GSC data has ~3 day lag
     const currentEnd = new Date(now);
@@ -182,19 +206,33 @@ export default async function RankingsPage() {
       });
     }
     dailyData.sort((a, b) => a.date.localeCompare(b.date));
+=======
+    [gscData, prevGscData] = await Promise.all([
+      fetchGscFull(accessToken, refreshToken, site.gsc_property_url, formatDate(startDate), formatDate(endDate)),
+      fetchGscFull(accessToken, refreshToken, site.gsc_property_url, formatDate(prevStartDate), formatDate(prevEndDate)),
+    ]);
+>>>>>>> refs/remotes/origin/main
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to fetch GSC data";
   }
 
   return (
     <div>
+<<<<<<< HEAD
       <DashboardHeader title="Rankings" description="Live Google Search Console data — last 28 days vs previous 28 days" />
+=======
+      <DashboardHeader
+        title="Rankings"
+        description={`${site.domain} — Google Search Console full breakdown`}
+      />
+>>>>>>> refs/remotes/origin/main
       <div className="p-6">
         {error ? (
-          <div className="text-center text-red-500">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-600">
             <p className="font-medium">Error loading GSC data</p>
             <p className="mt-1 text-sm">{error}</p>
           </div>
+<<<<<<< HEAD
         ) : (
           <RankingsView
             rankings={rankings}
@@ -204,6 +242,19 @@ export default async function RankingsPage() {
             domain={site.domain}
           />
         )}
+=======
+        ) : gscData ? (
+          <RankingsView
+            gscData={gscData}
+            prevGscData={prevGscData}
+            siteId={site.id}
+            domain={site.domain}
+            siteUrl={site.gsc_property_url!}
+            allSites={sites ?? []}
+            rangeDays={rangeDays}
+          />
+        ) : null}
+>>>>>>> refs/remotes/origin/main
       </div>
     </div>
   );
