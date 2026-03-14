@@ -53,17 +53,19 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
     setError("");
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/v1/auth/callback?next=${redirectTo}`,
-        },
+      // Use server-side route to auto-confirm + sign in immediately
+      const res = await fetch("/api/v1/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      if (error) {
-        setError(error.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error ?? "Sign up failed. Please try again.");
       } else {
-        setSuccess(true);
+        // Signed in server-side — refresh to pick up session
+        router.push(redirectTo);
+        router.refresh();
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -78,31 +80,7 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
     setLoading(false);
   }
 
-  if (success && mode === "signup") {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <div className="mb-3 text-4xl">🎉</div>
-            <h2 className="text-lg font-semibold">Account created!</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Check <strong>{email}</strong> to confirm your address, then come back and sign in.
-            </p>
-            <Button
-              className="mt-4 w-full"
-              variant="outline"
-              onClick={() => {
-                setSuccess(false);
-                setMode("signin");
-              }}
-            >
-              Go to sign in
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+
 
   return (
     <Card>
