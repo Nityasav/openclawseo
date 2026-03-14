@@ -1,15 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
-import { exchangeGA4CodeForTokens } from "@/lib/integrations/ga4";
+import { createServiceClient } from "@/lib/supabase/server";
+import { exchangeGA4CodeForTokens, parseGa4State } from "@/lib/integrations/ga4";
 import { encrypt } from "@/lib/encryption";
-import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
-  const state = searchParams.get("state") ?? "";
-  const isOnboarding = state.includes("source=onboarding");
+  const rawState = searchParams.get("state") ?? "";
+
+  const { source, userId } = parseGa4State(rawState);
+  const isOnboarding = source === "onboarding";
 
   if (error || !code) {
     return NextResponse.redirect(
@@ -19,20 +20,24 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (!userId) {
+    return NextResponse.redirect(`${origin}/auth/login`);
+  }
+
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.redirect(`${origin}/auth/login`);
+    // Use service role client — avoids relying on the user's session cookie
+    // surviving the cross-domain OAuth redirect from Google.
+    const supabase = createServiceClient();
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("org_id")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
 
-    const orgId = profile?.org_id ?? await ensureUserProfile(user);
+    const orgId = profile?.org_id;
     if (!orgId) {
-      return NextResponse.redirect(`${origin}/dashboard/settings?error=Failed+to+create+organization&tab=integrations`);
+      return NextResponse.redirect(`${origin}/dashboard/settings?error=Profile+not+found&tab=integrations`);
     }
 
     const tokens = await exchangeGA4CodeForTokens(code);

@@ -15,15 +15,29 @@ export function createGA4OAuth2Client() {
   );
 }
 
-export function getGa4AuthUrl(source = ""): string {
+export function getGa4AuthUrl(source = "", userId = ""): string {
   const oauth2Client = createGA4OAuth2Client();
+  const state = Buffer.from(JSON.stringify({ source, userId })).toString("base64url");
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
-    state: source ? `ga4:source=${source}` : "ga4",
+    state,
     include_granted_scopes: true,
   });
+}
+
+export function parseGa4State(state: string): { source: string; userId: string } {
+  try {
+    const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf8"));
+    if (decoded && typeof decoded === "object" && "userId" in decoded) {
+      return { source: decoded.source ?? "", userId: decoded.userId ?? "" };
+    }
+  } catch {
+    // Legacy state format
+  }
+  const cleaned = state.replace(/^ga4:?/, "");
+  return { source: cleaned.includes("source=onboarding") ? "onboarding" : "", userId: "" };
 }
 
 export async function exchangeGA4CodeForTokens(code: string) {

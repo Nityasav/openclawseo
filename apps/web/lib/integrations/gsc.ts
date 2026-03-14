@@ -11,15 +11,28 @@ export function createOAuth2Client() {
   );
 }
 
-export function getGscAuthUrl(source = ""): string {
+export function getGscAuthUrl(source = "", userId = ""): string {
   const oauth2Client = createOAuth2Client();
+  const state = Buffer.from(JSON.stringify({ source, userId })).toString("base64url");
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
     include_granted_scopes: true,
-    state: source ? `source=${source}` : undefined,
+    state,
   });
+}
+
+export function parseGscState(state: string): { source: string; userId: string } {
+  try {
+    const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf8"));
+    if (decoded && typeof decoded === "object" && "userId" in decoded) {
+      return { source: decoded.source ?? "", userId: decoded.userId ?? "" };
+    }
+  } catch {
+    // Legacy state format
+  }
+  return { source: state.includes("source=onboarding") ? "onboarding" : "", userId: "" };
 }
 
 export async function exchangeCodeForTokens(code: string) {
