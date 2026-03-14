@@ -116,6 +116,25 @@ export const GeoRecordSchema = z.object({
   checked_at: z.string(),
 });
 
+// AI-optimized blogs
+export const AiBlogPostSchema = z.object({
+  id: z.string().uuid(),
+  org_id: z.string().uuid(),
+  site_id: z.string().uuid().nullable(),
+  title: z.string(),
+  slug: z.string(),
+  status: z.enum(["draft", "published"]),
+  primary_keyword: z.string().nullable(),
+  secondary_keyword: z.string().nullable(),
+  prompt: z.string().nullable(),
+  word_count: z.number().nullable(),
+  read_time_minutes: z.number().nullable(),
+  content_html: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  published_at: z.string().nullable(),
+});
+
 // Webhook
 export const AgentWebhookSchema = z.object({
   run_id: z.string().uuid(),
@@ -145,3 +164,4 @@ export type SlackConnectInput = z.infer<typeof SlackConnectSchema>;
 export type Keyword = z.infer<typeof KeywordSchema>;
 export type Report = z.infer<typeof ReportSchema>;
 export type GeoRecord = z.infer<typeof GeoRecordSchema>;
+export type AiBlogPost = z.infer<typeof AiBlogPostSchema>;

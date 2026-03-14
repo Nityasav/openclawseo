@@ -57,3 +57,40 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* TipTap blog editor typography */
+.tiptap {
+  @apply text-sm leading-relaxed;
+}
+
+.tiptap h1 {
+  @apply mb-4 text-2xl font-bold;
+}
+
+.tiptap h2 {
+  @apply mt-6 mb-3 text-xl font-semibold;
+}
+
+.tiptap h3 {
+  @apply mt-4 mb-2 text-lg font-semibold;
+}
+
+.tiptap p {
+  @apply mb-3;
+}
+
+.tiptap ul {
+  @apply my-3 ml-5 list-disc space-y-1;
+}
+
+.tiptap ol {
+  @apply my-3 ml-5 list-decimal space-y-1;
+}
+
+.tiptap strong {
+  @apply font-semibold;
+}
+
+.tiptap blockquote {
+  @apply my-4 border-l-4 border-slate-200 bg-slate-50 px-4 py-2 italic dark:border-slate-700 dark:bg-slate-900;
+}
