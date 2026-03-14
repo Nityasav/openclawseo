@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
 } from "recharts";
 import type { GscFullData, GscRow } from "@/lib/integrations/gsc";
@@ -46,24 +46,24 @@ function pos(n: number | null | undefined) {
 }
 
 function posBadge(p: number) {
-  if (p <= 3) return "bg-green-100 text-green-800";
-  if (p <= 10) return "bg-blue-100 text-blue-800";
-  if (p <= 20) return "bg-yellow-100 text-yellow-800";
-  return "bg-gray-100 text-gray-600";
+  if (p <= 3) return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+  if (p <= 10) return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+  if (p <= 20) return "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20";
+  return "bg-white/[0.06] text-white/40";
 }
 
 function Delta({ curr, prev, invert = false, isPercent = false }: {
   curr: number; prev: number; invert?: boolean; isPercent?: boolean;
 }) {
   const diff = curr - prev;
-  if (Math.abs(diff) < 0.0001) return <span className="text-gray-300 text-xs">—</span>;
+  if (Math.abs(diff) < 0.0001) return <span className="text-white/20 text-xs">—</span>;
   const good = invert ? diff < 0 : diff > 0;
   const label = isPercent
     ? (diff * 100).toFixed(2) + "pp"
     : Math.abs(diff) >= 1 ? fmt(Math.abs(diff)) : (Math.abs(diff) * 100).toFixed(1) + "%";
 
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", good ? "text-green-600" : "text-red-500")}>
+    <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", good ? "text-emerald-400" : "text-red-400")}>
       {good ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
       {label}
     </span>
@@ -101,10 +101,10 @@ function useSortableTable<T>(rows: T[], defaultField: keyof T) {
   function Th({ f, label, className }: { f: keyof T; label: string; className?: string }) {
     return (
       <th
-        className={cn("cursor-pointer select-none whitespace-nowrap pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-900", className)}
+        className={cn("cursor-pointer select-none whitespace-nowrap pb-3 pr-4 text-left text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50", className)}
         onClick={() => toggleSort(f)}
       >
-        {label} {field === f ? (dir === "desc" ? "↓" : "↑") : <span className="text-gray-300">↕</span>}
+        {label} {field === f ? (dir === "desc" ? "↓" : "↑") : <span className="text-white/15">↕</span>}
       </th>
     );
   }
@@ -302,11 +302,11 @@ export function RankingsView({
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">{siteUrl}</span>
+          <Globe className="h-3.5 w-3.5 text-white/30" strokeWidth={1.5} />
+          <span className="text-xs text-white/50">{siteUrl}</span>
           {allSites.length > 1 && (
             <select
-              className="ml-2 rounded-md border border-gray-200 px-2 py-1 text-xs"
+              className="ml-2 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-xs text-white/60"
               defaultValue={siteId}
               onChange={(e) => {
                 const params = new URLSearchParams(searchParams?.toString());
@@ -347,12 +347,12 @@ export function RankingsView({
         ].map(({ label, curr, prev, fmt: f, invert }) => (
           <Card key={label}>
             <CardContent className="pt-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">{f(curr)}</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">{label}</p>
+              <p className="mt-2 text-3xl font-light text-white">{f(curr)}</p>
               {prev > 0 && (
-                <div className="mt-1">
+                <div className="mt-1.5">
                   <Delta curr={curr} prev={prev} invert={invert} />
-                  <span className="ml-1 text-xs text-gray-400">vs prev period</span>
+                  <span className="ml-1 text-xs text-white/25">vs prev period</span>
                 </div>
               )}
             </CardContent>
@@ -363,48 +363,46 @@ export function RankingsView({
       {/* Position distribution */}
       <div className="grid gap-4 sm:grid-cols-4">
         {[
-          { label: "Top 3", count: top3, color: "bg-green-100 text-green-800 border-green-200" },
-          { label: "Top 4–10", count: top10, color: "bg-blue-100 text-blue-800 border-blue-200" },
-          { label: "Pos 11–20", count: pos11_20, color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-          { label: "Pos 21+", count: pos21plus, color: "bg-gray-100 text-gray-600 border-gray-200" },
+          { label: "Top 3", count: top3, color: "border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400" },
+          { label: "Top 4–10", count: top10, color: "border-blue-500/20 bg-blue-500/[0.06] text-blue-400" },
+          { label: "Pos 11–20", count: pos11_20, color: "border-yellow-500/20 bg-yellow-500/[0.06] text-yellow-400" },
+          { label: "Pos 21+", count: pos21plus, color: "border-white/[0.06] bg-white/[0.02] text-white/40" },
         ].map(({ label, count, color }) => (
-          <Card key={label} className={cn("border", color)}>
-            <CardContent className="pt-4 pb-4 text-center">
-              <p className="text-2xl font-bold">{count}</p>
-              <p className="text-xs font-medium mt-1">{label}</p>
-              <p className="text-xs opacity-70">{queryRows.length > 0 ? Math.round((count / queryRows.length) * 100) : 0}% of queries</p>
-            </CardContent>
-          </Card>
+          <div key={label} className={cn("rounded-lg border p-4 text-center", color)}>
+            <p className="text-2xl font-light">{count}</p>
+            <p className="text-[10px] font-medium mt-1 uppercase tracking-widest opacity-70">{label}</p>
+            <p className="text-xs opacity-50 mt-0.5">{queryRows.length > 0 ? Math.round((count / queryRows.length) * 100) : 0}%</p>
+          </div>
         ))}
       </div>
 
       {/* Alerts */}
       {droppedQueries.length > 0 && (
-        <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+        <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.06] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600" />
-            <p className="font-semibold text-orange-800">{droppedQueries.length} queries dropped in position</p>
+            <AlertTriangle className="h-4 w-4 text-orange-400" strokeWidth={1.5} />
+            <p className="text-xs font-medium text-orange-400">{droppedQueries.length} queries dropped in position</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {droppedQueries.slice(0, 6).map((r) => (
-              <Badge key={r.query} variant="outline" className="border-orange-300 text-orange-700 text-xs">
+              <Badge key={r.query} variant="outline" className="border-orange-500/30 text-orange-400 text-[10px]">
                 {r.query.slice(0, 40)} (+{(r.position - r.prevPosition).toFixed(1)})
               </Badge>
             ))}
-            {droppedQueries.length > 6 && <Badge variant="outline" className="text-xs">+{droppedQueries.length - 6} more</Badge>}
+            {droppedQueries.length > 6 && <Badge variant="outline" className="text-[10px]">+{droppedQueries.length - 6} more</Badge>}
           </div>
         </div>
       )}
 
       {lowCtrOpp.length > 0 && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="rounded-lg border border-blue-500/20 bg-blue-500/[0.06] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowUpRight className="h-5 w-5 text-blue-600" />
-            <p className="font-semibold text-blue-800">{lowCtrOpp.length} CTR opportunities — ranked top 10 but CTR &lt; 2%</p>
+            <ArrowUpRight className="h-4 w-4 text-blue-400" strokeWidth={1.5} />
+            <p className="text-xs font-medium text-blue-400">{lowCtrOpp.length} CTR opportunities — ranked top 10 but CTR &lt; 2%</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {lowCtrOpp.slice(0, 6).map((r) => (
-              <Badge key={r.query} variant="outline" className="border-blue-300 text-blue-700 text-xs">
+              <Badge key={r.query} variant="outline" className="border-blue-500/30 text-blue-400 text-[10px]">
                 {r.query.slice(0, 40)} (pos {r.position.toFixed(1)}, {pct(r.ctr)} CTR)
               </Badge>
             ))}
@@ -415,24 +413,22 @@ export function RankingsView({
       {/* Trend chart */}
       {trendData.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Performance Trend</CardTitle>
-            <CardDescription>Clicks & impressions over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
+          <div className="px-5 py-4 border-b border-white/[0.06]">
+            <h3 className="text-xs font-medium text-white/60 uppercase tracking-widest">Performance Trend</h3>
+          </div>
+          <div className="p-5">
+            <ResponsiveContainer width="100%" height={220}>
               <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="#3b82f6" strokeWidth={2} dot={false} name="Clicks" />
-                <Line yAxisId="right" type="monotone" dataKey="impressions" stroke="#93c5fd" strokeWidth={1.5} dot={false} name="Impressions" strokeDasharray="4 2" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.25)" }} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", fontSize: "11px" }} itemStyle={{ color: "rgba(255,255,255,0.6)" }} labelStyle={{ color: "rgba(255,255,255,0.4)" }} />
+                <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} dot={false} name="Clicks" />
+                <Line yAxisId="right" type="monotone" dataKey="impressions" stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} dot={false} name="Impressions" strokeDasharray="4 2" />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
+          </div>
         </Card>
       )}
 
@@ -459,7 +455,7 @@ export function RankingsView({
             </CardHeader>
             <CardContent>
               <div className="mb-4 relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-white/20" strokeWidth={1.5} />
                 <Input
                   placeholder="Filter queries..."
                   value={querySearch}
@@ -473,18 +469,18 @@ export function RankingsView({
                     <tr className="border-b">
                       <qTable.Th f="query" label="Query" className="min-w-[200px]" />
                       <qTable.Th f="clicks" label="Clicks" />
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 pr-4 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                       <qTable.Th f="impressions" label="Impressions" />
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 pr-4 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                       <qTable.Th f="ctr" label="CTR" />
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 pr-4 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                       <qTable.Th f="position" label="Avg Position" />
-                      <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {qTable.sorted.map((r) => (
-                      <tr key={r.query} className="hover:bg-gray-50">
+                      <tr key={r.query} className="hover:bg-white/[0.02]">
                         <td className="py-2.5 pr-4 font-medium max-w-xs truncate" title={r.query}>{r.query}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
                         <td className="py-2.5 pr-4">
@@ -511,7 +507,7 @@ export function RankingsView({
                   </tbody>
                 </table>
                 {qTable.sorted.length === 0 && (
-                  <p className="py-8 text-center text-sm text-gray-400">No queries match your filter.</p>
+                  <p className="py-8 text-center text-xs text-white/20">No queries match your filter.</p>
                 )}
               </div>
             </CardContent>
@@ -532,7 +528,7 @@ export function RankingsView({
             </CardHeader>
             <CardContent>
               <div className="mb-4 relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-white/20" strokeWidth={1.5} />
                 <Input
                   placeholder="Filter pages..."
                   value={pageSearch}
@@ -546,17 +542,17 @@ export function RankingsView({
                     <tr className="border-b">
                       <pTable.Th f="page" label="Page URL" className="min-w-[240px]" />
                       <pTable.Th f="clicks" label="Clicks" />
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 pr-4 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                       <pTable.Th f="impressions" label="Impressions" />
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">vs prev</th>
+                      <th className="pb-3 pr-4 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">vs prev</th>
                       <pTable.Th f="ctr" label="CTR" />
                       <pTable.Th f="position" label="Avg Position" />
-                      <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Indexed</th>
+                      <th className="pb-3 text-left text-[10px] font-medium uppercase tracking-widest text-white/25">Indexed</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {pTable.sorted.map((r) => (
-                      <tr key={r.page} className="hover:bg-gray-50">
+                      <tr key={r.page} className="hover:bg-white/[0.02]">
                         <td className="py-2.5 pr-4 font-mono text-xs max-w-sm truncate text-blue-700" title={r.page}>
                           <a href={r.page} target="_blank" rel="noopener noreferrer" className="hover:underline">
                             {r.page.replace(/^https?:\/\/[^/]+/, "") || "/"}
@@ -578,8 +574,8 @@ export function RankingsView({
                         </td>
                         <td className="py-2.5">
                           {r.impressions > 0
-                            ? <Badge variant="outline" className="border-green-300 text-green-700 text-xs">Indexed</Badge>
-                            : <Badge variant="outline" className="text-xs text-gray-400">Unknown</Badge>
+                            ? <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs">Indexed</Badge>
+                            : <Badge variant="outline" className="text-xs text-white/30">Unknown</Badge>
                           }
                         </td>
                       </tr>
@@ -587,7 +583,7 @@ export function RankingsView({
                   </tbody>
                 </table>
                 {pTable.sorted.length === 0 && (
-                  <p className="py-8 text-center text-sm text-gray-400">No pages match your filter.</p>
+                  <p className="py-8 text-center text-xs text-white/20">No pages match your filter.</p>
                 )}
               </div>
             </CardContent>
@@ -615,20 +611,20 @@ export function RankingsView({
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <span>{fmt(d.clicks)} clicks</span>
-                            <span className="text-gray-400">{fmt(d.impressions)} impr.</span>
-                            <span className="text-gray-400">{pct(d.ctr)} CTR</span>
+                            <span className="text-white/30">{fmt(d.impressions)} impr.</span>
+                            <span className="text-white/30">{pct(d.ctr)} CTR</span>
                             <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(d.position))}>
                               pos {pos(d.position)}
                             </span>
                           </div>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100">
+                        <div className="h-2 rounded-full bg-white/[0.06]">
                           <div
                             className="h-2 rounded-full bg-blue-500"
                             style={{ width: `${sharePct}%` }}
                           />
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">{sharePct.toFixed(1)}% of total clicks</p>
+                        <p className="text-xs text-white/30 mt-0.5">{sharePct.toFixed(1)}% of total clicks</p>
                       </div>
                     );
                   })}
@@ -682,7 +678,7 @@ export function RankingsView({
                   </thead>
                   <tbody className="divide-y">
                     {cTable.sorted.map((r) => (
-                      <tr key={r.country} className="hover:bg-gray-50">
+                      <tr key={r.country} className="hover:bg-white/[0.02]">
                         <td className="py-2.5 pr-4 font-medium">{r.country}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>

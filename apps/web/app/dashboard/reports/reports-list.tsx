@@ -48,7 +48,7 @@ function ReportCard({ report }: { report: Report }) {
               <FileText className="h-4 w-4 text-blue-600" />
               <CardTitle className="text-base">{report.title ?? "SEO Report"}</CardTitle>
             </div>
-            <p className="mt-1 text-sm text-gray-500">{formatDate(report.created_at)}</p>
+            <p className="mt-1 text-sm text-white/40">{formatDate(report.created_at)}</p>
           </div>
           <div className="flex items-center gap-2">
             {report.delivered_to_slack && (
@@ -65,7 +65,7 @@ function ReportCard({ report }: { report: Report }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600">{report.summary ?? "No summary available."}</p>
+        <p className="text-sm text-white/50">{report.summary ?? "No summary available."}</p>
 
         {data && (
           <div className="mt-3">
@@ -115,7 +115,7 @@ export function ReportsList({ reports }: { reports: Report[] }) {
   if (reports.length === 0) {
     return (
       <Card>
-        <CardContent className="py-16 text-center text-gray-400">
+        <CardContent className="py-16 text-center text-white/30">
           <FileText className="mx-auto mb-3 h-8 w-8" />
           <p className="font-medium">No reports yet</p>
           <p className="mt-1 text-sm">Run an agent audit to generate your first report.</p>

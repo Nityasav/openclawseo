@@ -36,7 +36,7 @@ export function TriggerRunButton({ siteId }: { siteId: string }) {
 
   return (
     <Button onClick={handleTrigger} disabled={loading} size="sm">
-      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+      {loading ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Zap className="mr-1.5 h-3 w-3" strokeWidth={1.5} />}
       Run Audit Now
     </Button>
   );

@@ -22,7 +22,7 @@ export default async function RankingsPage({
     return (
       <div>
         <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
-        <div className="p-6 text-center text-gray-400">Please sign in.</div>
+        <div className="p-6 text-center text-white/30">Please sign in.</div>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export default async function RankingsPage({
     return (
       <div>
         <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
-        <div className="p-6 text-center text-gray-400">No organization found.</div>
+        <div className="p-6 text-center text-white/30">No organization found.</div>
       </div>
     );
   }
@@ -67,8 +67,8 @@ export default async function RankingsPage({
       <div>
         <DashboardHeader title="Rankings" description="Google Search Console — full performance breakdown" />
         <div className="p-6 text-center">
-          <p className="text-lg font-medium text-gray-700">No GSC data available</p>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="text-lg font-medium text-white/60">No GSC data available</p>
+          <p className="mt-1 text-sm text-white/30">
             Connect Google Search Console and select a property in{" "}
             <Link href="/dashboard/settings?tab=integrations" className="text-blue-600 hover:underline">
               Settings
