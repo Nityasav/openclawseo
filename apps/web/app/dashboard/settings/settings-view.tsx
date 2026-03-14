@@ -243,7 +243,7 @@ function IntegrationCard({
   );
 }
 
-function SlackIntegration({ isConnected }: { isConnected: boolean }) {
+function DiscordIntegration({ isConnected }: { isConnected: boolean }) {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -252,13 +252,13 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch("/api/v1/integrations/slack/connect", {
+      const res = await fetch("/api/v1/integrations/discord/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ webhook_url: webhookUrl, site_id: "00000000-0000-0000-0000-000000000000" }),
+        body: JSON.stringify({ webhook_url: webhookUrl }),
       });
       const data = await res.json();
-      if (data.success) toast({ title: "Slack connected!" });
+      if (data.success) toast({ title: "Discord connected!" });
       else toast({ title: "Failed", description: data.error, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -268,13 +268,9 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   async function test() {
     setTesting(true);
     try {
-      const res = await fetch("/api/v1/integrations/slack/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ site_id: "00000000-0000-0000-0000-000000000000" }),
-      });
+      const res = await fetch("/api/v1/integrations/discord/test", { method: "POST" });
       const data = await res.json();
-      if (data.success) toast({ title: "Test message sent to Slack!" });
+      if (data.success) toast({ title: "Test message sent to Discord!" });
       else toast({ title: "Failed", description: data.error, variant: "destructive" });
     } finally {
       setTesting(false);
@@ -284,13 +280,16 @@ function SlackIntegration({ isConnected }: { isConnected: boolean }) {
   return (
     <div className="space-y-3">
       <div>
-        <Label htmlFor="webhook">Incoming Webhook URL</Label>
+        <Label htmlFor="discord-webhook">Webhook URL</Label>
         <Input
-          id="webhook"
-          placeholder="https://hooks.slack.com/services/..."
+          id="discord-webhook"
+          placeholder="https://discord.com/api/webhooks/..."
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
         />
+        <p className="text-xs text-white/30 mt-1">
+          Discord channel → Edit Channel → Integrations → Webhooks → Create Webhook
+        </p>
       </div>
       <div className="flex gap-2">
         <Button onClick={save} disabled={saving || !webhookUrl} size="sm">
@@ -511,12 +510,12 @@ export function SettingsView({
               ) : undefined}
             </IntegrationCard>
             <IntegrationCard
-              name="Slack"
-              description="Receive automated SEO reports in your Slack workspace"
-              provider="slack"
-              isConnected={connectedProviders.includes("slack")}
+              name="Discord"
+              description="Receive automated SEO reports in your Discord channel"
+              provider="discord"
+              isConnected={connectedProviders.includes("discord")}
             >
-              <SlackIntegration isConnected={connectedProviders.includes("slack")} />
+              <DiscordIntegration isConnected={connectedProviders.includes("discord")} />
             </IntegrationCard>
             <IntegrationCard
               name="Framer CMS"
