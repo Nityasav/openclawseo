@@ -54,20 +54,191 @@ function IntegrationCard({
       </CardHeader>
       <CardContent>
         {children ?? (
-          connectHref && !isConnected && (
-            <Button asChild size="sm" variant="outline">
-              <a href={connectHref}>
-                <ExternalLink className="mr-2 h-3 w-3" />
-                Connect
-              </a>
-            </Button>
-          )
-        )}
-        {isConnected && !children && (
-          <p className="text-sm text-gray-500">Integration active. Click to reconnect or manage.</p>
+          <>
+            {connectHref && !isConnected && (
+              <Button asChild size="sm" variant="outline">
+                <a href={connectHref}>
+                  <ExternalLink className="mr-2 h-3 w-3" />
+                  Connect
+                </a>
+              </Button>
+            )}
+            {isConnected && connectHref && (
+              <Button asChild size="sm" variant="outline">
+                <a href={connectHref}>
+                  <ExternalLink className="mr-2 h-3 w-3" />
+                  Reconnect
+                </a>
+              </Button>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function GscSitePicker({ orgId }: { orgId: string }) {
+  const [sites, setSites] = useState<Array<{ siteUrl: string; permissionLevel: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [fetched, setFetched] = useState(false);
+  const { toast } = useToast();
+
+  async function fetchSites() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/integrations/gsc/sites");
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+        return;
+      }
+      setSites(data.sites ?? []);
+      setFetched(true);
+      if ((data.sites ?? []).length === 0) {
+        toast({ title: "No sites found", description: "No GSC properties found for this account." });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to fetch GSC sites", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function selectSite(siteUrl: string) {
+    setSaving(siteUrl);
+    try {
+      const res = await fetch("/api/v1/integrations/gsc/sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site_url: siteUrl, org_id: orgId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+      } else {
+        toast({ title: "Site linked!", description: `${siteUrl} linked to your account.` });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save site", variant: "destructive" });
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Button onClick={fetchSites} disabled={loading} size="sm" variant="outline">
+        {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+        Fetch GSC Sites
+      </Button>
+      {fetched && sites.length > 0 && (
+        <div className="space-y-2">
+          {sites.map((site) => (
+            <div key={site.siteUrl} className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">{site.siteUrl}</p>
+                <p className="text-xs text-gray-500">{site.permissionLevel}</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => selectSite(site.siteUrl)}
+                disabled={saving === site.siteUrl}
+              >
+                {saving === site.siteUrl && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                Link
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      {fetched && sites.length === 0 && (
+        <p className="text-sm text-gray-400">No GSC sites found for this Google account.</p>
+      )}
+    </div>
+  );
+}
+
+function Ga4PropertyPicker({ orgId }: { orgId: string }) {
+  const [properties, setProperties] = useState<Array<{ propertyId: string; displayName: string; account: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [fetched, setFetched] = useState(false);
+  const { toast } = useToast();
+
+  async function fetchProperties() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/integrations/ga4/properties");
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+        return;
+      }
+      setProperties(data.properties ?? []);
+      setFetched(true);
+      if ((data.properties ?? []).length === 0) {
+        toast({ title: "No properties found", description: "No GA4 properties found for this account." });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to fetch GA4 properties", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function selectProperty(propertyId: string) {
+    setSaving(propertyId);
+    try {
+      const res = await fetch("/api/v1/integrations/ga4/properties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_id: propertyId, org_id: orgId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+      } else {
+        toast({ title: "Property linked!", description: `GA4 property linked to your account.` });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save property", variant: "destructive" });
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Button onClick={fetchProperties} disabled={loading} size="sm" variant="outline">
+        {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+        Fetch GA4 Properties
+      </Button>
+      {fetched && properties.length > 0 && (
+        <div className="space-y-2">
+          {properties.map((prop) => (
+            <div key={prop.propertyId} className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">{prop.displayName}</p>
+                <p className="text-xs text-gray-500">{prop.account} &middot; {prop.propertyId}</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => selectProperty(prop.propertyId)}
+                disabled={saving === prop.propertyId}
+              >
+                {saving === prop.propertyId && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                Link
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      {fetched && properties.length === 0 && (
+        <p className="text-sm text-gray-400">No GA4 properties found for this Google account.</p>
+      )}
+    </div>
   );
 }
 
@@ -268,15 +439,43 @@ export function SettingsView({
               description="Import search analytics, keywords, and impressions"
               provider="gsc"
               isConnected={connectedProviders.includes("gsc")}
-              connectHref="/api/v1/integrations/gsc/connect"
-            />
+              connectHref={connectedProviders.includes("gsc") ? undefined : "/api/v1/integrations/gsc/connect"}
+            >
+              {connectedProviders.includes("gsc") ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <a href="/api/v1/integrations/gsc/connect">
+                        <ExternalLink className="mr-2 h-3 w-3" />
+                        Reconnect
+                      </a>
+                    </Button>
+                  </div>
+                  <GscSitePicker orgId={orgId} />
+                </div>
+              ) : undefined}
+            </IntegrationCard>
             <IntegrationCard
               name="Google Analytics 4"
               description="Import sessions, conversions, and traffic data"
               provider="ga4"
               isConnected={connectedProviders.includes("ga4")}
-              connectHref="/api/v1/integrations/ga4/connect"
-            />
+              connectHref={connectedProviders.includes("ga4") ? undefined : "/api/v1/integrations/ga4/connect"}
+            >
+              {connectedProviders.includes("ga4") ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button asChild size="sm" variant="outline">
+                      <a href="/api/v1/integrations/ga4/connect">
+                        <ExternalLink className="mr-2 h-3 w-3" />
+                        Reconnect
+                      </a>
+                    </Button>
+                  </div>
+                  <Ga4PropertyPicker orgId={orgId} />
+                </div>
+              ) : undefined}
+            </IntegrationCard>
             <IntegrationCard
               name="Slack"
               description="Receive automated SEO reports in your Slack workspace"

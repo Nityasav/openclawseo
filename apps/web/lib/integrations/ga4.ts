@@ -1,7 +1,10 @@
 import { google } from "googleapis";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
-const SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/analytics.edit",
+];
 
 export function createGA4OAuth2Client() {
   return new google.auth.OAuth2(
@@ -27,6 +30,34 @@ export async function exchangeGA4CodeForTokens(code: string) {
   const oauth2Client = createGA4OAuth2Client();
   const { tokens } = await oauth2Client.getToken(code);
   return tokens;
+}
+
+export async function listGA4Properties(accessToken: string, refreshToken: string) {
+  const oauth2Client = createGA4OAuth2Client();
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
+  const response = await analyticsAdmin.accounts.list();
+  const accounts = response.data.accounts ?? [];
+
+  const properties: Array<{ propertyId: string; displayName: string; account: string }> = [];
+  for (const account of accounts) {
+    const propsResponse = await analyticsAdmin.properties.list({
+      filter: `parent:${account.name}`,
+    });
+    for (const prop of propsResponse.data.properties ?? []) {
+      properties.push({
+        propertyId: prop.name?.replace("properties/", "") ?? "",
+        displayName: prop.displayName ?? "",
+        account: account.displayName ?? "",
+      });
+    }
+  }
+
+  return properties;
 }
 
 export async function fetchGA4Data(
