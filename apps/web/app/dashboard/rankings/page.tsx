@@ -16,6 +16,26 @@ export interface LiveRankingRow {
   position_delta: number;
 }
 
+export interface PageRow {
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  clicks_delta: number;
+  impressions_delta: number;
+  ctr_delta: number;
+  position_delta: number;
+}
+
+export interface DateRow {
+  date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }
@@ -48,7 +68,6 @@ export default async function RankingsPage() {
     );
   }
 
-  // Get GSC integration
   const { data: integration } = await supabase
     .from("integrations")
     .select("access_token, refresh_token")
@@ -56,7 +75,6 @@ export default async function RankingsPage() {
     .eq("provider", "gsc")
     .single();
 
-  // Get the first non-sandbox site with a GSC property
   const { data: sites } = await supabase
     .from("sites")
     .select("id, domain, gsc_property_url")
@@ -79,6 +97,8 @@ export default async function RankingsPage() {
   }
 
   let rankings: LiveRankingRow[] = [];
+  let pages: PageRow[] = [];
+  let dailyData: DateRow[] = [];
   let error: string | null = null;
 
   try {
@@ -90,33 +110,30 @@ export default async function RankingsPage() {
     const currentEnd = new Date(now);
     currentEnd.setDate(currentEnd.getDate() - 3);
     const currentStart = new Date(currentEnd);
-    currentStart.setDate(currentStart.getDate() - 7);
+    currentStart.setDate(currentStart.getDate() - 28); // 28 days for more data
     const prevEnd = new Date(currentStart);
     prevEnd.setDate(prevEnd.getDate() - 1);
     const prevStart = new Date(prevEnd);
-    prevStart.setDate(prevStart.getDate() - 7);
+    prevStart.setDate(prevStart.getDate() - 28);
 
-    const [currentRows, prevRows] = await Promise.all([
-      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(currentStart), formatDate(currentEnd), { dimensions: ["query"], rowLimit: 500 }),
-      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(prevStart), formatDate(prevEnd), { dimensions: ["query"], rowLimit: 500 }),
+    // Fetch query, page, and date data in parallel
+    const [currentQueryRows, prevQueryRows, currentPageRows, prevPageRows, dateRows] = await Promise.all([
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(currentStart), formatDate(currentEnd), { dimensions: ["query"], rowLimit: 1000 }),
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(prevStart), formatDate(prevEnd), { dimensions: ["query"], rowLimit: 1000 }),
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(currentStart), formatDate(currentEnd), { dimensions: ["page"], rowLimit: 1000 }),
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(prevStart), formatDate(prevEnd), { dimensions: ["page"], rowLimit: 1000 }),
+      fetchGscData(accessToken, refreshToken, site.gsc_property_url, formatDate(currentStart), formatDate(currentEnd), { dimensions: ["date"], rowLimit: 1000 }),
     ]);
 
-    // Build lookup for previous period
-    const prevMap = new Map<string, { clicks: number; impressions: number; ctr: number; position: number }>();
-    for (const row of prevRows) {
+    // Build query rankings with deltas
+    const prevQueryMap = new Map<string, { clicks: number; impressions: number; ctr: number; position: number }>();
+    for (const row of prevQueryRows) {
       const query = row.keys?.[0] ?? "";
-      prevMap.set(query, {
-        clicks: row.clicks ?? 0,
-        impressions: row.impressions ?? 0,
-        ctr: row.ctr ?? 0,
-        position: row.position ?? 0,
-      });
+      prevQueryMap.set(query, { clicks: row.clicks ?? 0, impressions: row.impressions ?? 0, ctr: row.ctr ?? 0, position: row.position ?? 0 });
     }
-
-    // Merge current with previous
-    for (const row of currentRows) {
+    for (const row of currentQueryRows) {
       const query = row.keys?.[0] ?? "";
-      const prev = prevMap.get(query);
+      const prev = prevQueryMap.get(query);
       rankings.push({
         query,
         clicks: row.clicks ?? 0,
@@ -126,19 +143,52 @@ export default async function RankingsPage() {
         clicks_delta: (row.clicks ?? 0) - (prev?.clicks ?? 0),
         impressions_delta: (row.impressions ?? 0) - (prev?.impressions ?? 0),
         ctr_delta: (row.ctr ?? 0) - (prev?.ctr ?? 0),
-        position_delta: (prev?.position ?? row.position ?? 0) - (row.position ?? 0), // positive = improved
+        position_delta: (prev?.position ?? row.position ?? 0) - (row.position ?? 0),
       });
     }
-
-    // Sort by impressions descending
     rankings.sort((a, b) => b.impressions - a.impressions);
+
+    // Build page rankings with deltas
+    const prevPageMap = new Map<string, { clicks: number; impressions: number; ctr: number; position: number }>();
+    for (const row of prevPageRows) {
+      const page = row.keys?.[0] ?? "";
+      prevPageMap.set(page, { clicks: row.clicks ?? 0, impressions: row.impressions ?? 0, ctr: row.ctr ?? 0, position: row.position ?? 0 });
+    }
+    for (const row of currentPageRows) {
+      const page = row.keys?.[0] ?? "";
+      const prev = prevPageMap.get(page);
+      pages.push({
+        page,
+        clicks: row.clicks ?? 0,
+        impressions: row.impressions ?? 0,
+        ctr: row.ctr ?? 0,
+        position: row.position ?? 0,
+        clicks_delta: (row.clicks ?? 0) - (prev?.clicks ?? 0),
+        impressions_delta: (row.impressions ?? 0) - (prev?.impressions ?? 0),
+        ctr_delta: (row.ctr ?? 0) - (prev?.ctr ?? 0),
+        position_delta: (prev?.position ?? row.position ?? 0) - (row.position ?? 0),
+      });
+    }
+    pages.sort((a, b) => b.impressions - a.impressions);
+
+    // Build daily time series
+    for (const row of dateRows) {
+      dailyData.push({
+        date: row.keys?.[0] ?? "",
+        clicks: row.clicks ?? 0,
+        impressions: row.impressions ?? 0,
+        ctr: row.ctr ?? 0,
+        position: row.position ?? 0,
+      });
+    }
+    dailyData.sort((a, b) => a.date.localeCompare(b.date));
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to fetch GSC data";
   }
 
   return (
     <div>
-      <DashboardHeader title="Rankings" description="Live Google Search Console data — last 7 days vs previous 7 days" />
+      <DashboardHeader title="Rankings" description="Live Google Search Console data — last 28 days vs previous 28 days" />
       <div className="p-6">
         {error ? (
           <div className="text-center text-red-500">
@@ -146,7 +196,13 @@ export default async function RankingsPage() {
             <p className="mt-1 text-sm">{error}</p>
           </div>
         ) : (
-          <RankingsView rankings={rankings} siteId={site.id} domain={site.domain} />
+          <RankingsView
+            rankings={rankings}
+            pages={pages}
+            dailyData={dailyData}
+            siteId={site.id}
+            domain={site.domain}
+          />
         )}
       </div>
     </div>
