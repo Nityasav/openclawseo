@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listGscSites } from "@/lib/integrations/gsc";
 import { decrypt } from "@/lib/encryption";
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -18,14 +19,15 @@ export async function GET() {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id) {
-      return NextResponse.json({ success: false, error: "No organization found" }, { status: 403 });
+    const orgId = profile?.org_id ?? await ensureUserProfile(user);
+    if (!orgId) {
+      return NextResponse.json({ success: false, error: "No organization found — please sign out and sign in again" }, { status: 403 });
     }
 
     const { data: integration } = await supabase
       .from("integrations")
       .select("access_token, refresh_token")
-      .eq("org_id", profile.org_id)
+      .eq("org_id", orgId)
       .eq("provider", "gsc")
       .single();
 

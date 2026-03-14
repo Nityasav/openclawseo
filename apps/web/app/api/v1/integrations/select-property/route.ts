@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (!profile?.org_id) {
+    const orgId = profile?.org_id ?? await ensureUserProfile(user);
+    if (!orgId) {
       return NextResponse.json({ success: false, error: "No organization found" }, { status: 403 });
     }
 
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
     let { data: site } = await supabase
       .from("sites")
       .select("id")
-      .eq("org_id", profile.org_id)
+      .eq("org_id", orgId)
       .eq("domain", domain)
       .eq("is_sandbox", false)
       .single();
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (!site) {
       const { data: newSite, error: siteError } = await supabase
         .from("sites")
-        .insert({ org_id: profile.org_id, domain })
+        .insert({ org_id: orgId, domain })
         .select("id")
         .single();
 
