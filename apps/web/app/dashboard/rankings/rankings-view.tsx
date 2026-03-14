@@ -403,7 +403,7 @@ export function RankingsView({
         </Card>
       )}
 
-      {/* Tabs */}
+      {/* Tabs: Queries / Pages / Query × Page / Devices / Countries */}
       <Tabs defaultValue="queries">
         <TabsList className="mb-4">
           <TabsTrigger value="queries">Queries ({queryRows.length})</TabsTrigger>
@@ -511,7 +511,9 @@ export function RankingsView({
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.clicks)}</td>
                         <td className="py-2.5 pr-4">{r.prevClicks > 0 && <Delta curr={r.clicks} prev={r.prevClicks} />}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
-                        <td className="py-2.5 pr-4">{r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}</td>
+                        <td className="py-2.5 pr-4">
+                          {r.prevImpressions > 0 && <Delta curr={r.impressions} prev={r.prevImpressions} />}
+                        </td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
                         <td className="py-2.5 pr-4">
                           <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
@@ -665,7 +667,9 @@ export function RankingsView({
                         <td className="py-2.5 pr-4 tabular-nums">{fmt(r.impressions)}</td>
                         <td className="py-2.5 pr-4 tabular-nums">{pct(r.ctr)}</td>
                         <td className="py-2.5">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>{pos(r.position)}</span>
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", posBadge(r.position))}>
+                            {pos(r.position)}
+                          </span>
                         </td>
                       </tr>
                     ))}

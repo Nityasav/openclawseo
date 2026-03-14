@@ -84,10 +84,10 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
 
 
   return (
-    <Card>
+    <Card className="rounded-2xl border-white/10">
       <CardHeader>
-        <CardTitle>{mode === "signin" ? "Sign in" : "Create account"}</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-white">{mode === "signin" ? "Sign in" : "Create account"}</CardTitle>
+        <CardDescription className="text-white/40">
           {mode === "signin"
             ? "Welcome back — sign in to your SEOClaw account"
             : "Get started with SEOClaw for free"}
@@ -95,7 +95,7 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700">
+          <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
@@ -135,17 +135,17 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-white/10" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
+            <span className="bg-[#0a0a0a] px-2 text-white/30">Or</span>
           </div>
         </div>
 
         {/* Email + Password form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-white/70">Email</Label>
             <Input
               id="email"
               type="email"
@@ -156,7 +156,7 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
             />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-white/70">Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -170,7 +170,7 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -185,14 +185,14 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
         </form>
 
         {/* Toggle mode */}
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-white/40">
           {mode === "signin" ? (
             <>
               Don&apos;t have an account?{" "}
               <button
                 type="button"
                 onClick={() => { setMode("signup"); setError(""); }}
-                className="font-medium text-blue-600 hover:underline"
+                className="font-medium text-white/70 hover:text-white hover:underline"
               >
                 Sign up
               </button>
@@ -203,7 +203,7 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
               <button
                 type="button"
                 onClick={() => { setMode("signin"); setError(""); }}
-                className="font-medium text-blue-600 hover:underline"
+                className="font-medium text-white/70 hover:text-white hover:underline"
               >
                 Sign in
               </button>

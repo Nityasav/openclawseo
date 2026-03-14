@@ -165,12 +165,12 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
   return (
     <div
       className={cn(
-        "flex min-h-[260px] flex-col rounded-xl border bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm",
+        "flex min-h-[260px] flex-col rounded-xl border border-white/10 bg-white/[0.04] dark:border-white/10 dark:bg-white/[0.04]",
         className
       )}
     >
       {editor && <Toolbar editor={editor} />}
-      <div className="min-h-[220px] overflow-y-auto px-6 py-4">
+      <div className="min-h-[220px] overflow-y-auto px-6 py-4 text-foreground">
         <EditorContent editor={editor} />
       </div>
     </div>

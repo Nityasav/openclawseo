@@ -17,11 +17,11 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white px-6 py-12">
+      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">SEOClaw</h1>
-          <p className="mt-2 text-gray-600">Sign in to your account</p>
+          <h1 className="text-3xl font-light tracking-tight text-white">SEOClaw</h1>
+          <p className="mt-2 text-white/40 text-sm">Sign in to your account</p>
         </div>
         <LoginForm error={searchParams.error} next={searchParams.next} />
       </div>
