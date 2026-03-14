@@ -11,13 +11,14 @@ export function createOAuth2Client() {
   );
 }
 
-export function getGscAuthUrl(): string {
+export function getGscAuthUrl(source = ""): string {
   const oauth2Client = createOAuth2Client();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
     include_granted_scopes: true,
+    state: source ? `source=${source}` : undefined,
   });
 }
 

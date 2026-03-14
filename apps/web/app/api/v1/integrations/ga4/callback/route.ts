@@ -8,10 +8,14 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const state = searchParams.get("state") ?? "";
+  const isOnboarding = state.includes("source=onboarding");
 
   if (error || !code) {
     return NextResponse.redirect(
-      `${origin}/dashboard/settings?error=${encodeURIComponent(error ?? "No code")}&tab=integrations`
+      isOnboarding
+        ? `${origin}/onboarding?step=2&error=${encodeURIComponent(error ?? "No code")}`
+        : `${origin}/dashboard/settings?error=${encodeURIComponent(error ?? "No code")}&tab=integrations`
     );
   }
 
@@ -43,11 +47,17 @@ export async function GET(request: NextRequest) {
         : null,
     }, { onConflict: "org_id,provider" });
 
-    return NextResponse.redirect(`${origin}/dashboard/settings?success=ga4_connected&tab=integrations`);
+    const successRedirect = isOnboarding
+      ? `${origin}/onboarding?step=2&connected=ga4`
+      : `${origin}/dashboard/settings?success=ga4_connected&tab=integrations`;
+
+    return NextResponse.redirect(successRedirect);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Connection failed";
     return NextResponse.redirect(
-      `${origin}/dashboard/settings?error=${encodeURIComponent(message)}&tab=integrations`
+      isOnboarding
+        ? `${origin}/onboarding?step=2&error=${encodeURIComponent(message)}`
+        : `${origin}/dashboard/settings?error=${encodeURIComponent(message)}&tab=integrations`
     );
   }
 }
