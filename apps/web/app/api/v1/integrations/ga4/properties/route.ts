@@ -51,7 +51,7 @@ export async function GET() {
     const accounts = accountsRes.data.accounts ?? [];
 
     // For each account, list properties
-    const results: Array<{ accountId: string; accountName: string; propertyId: string; propertyName: string; websiteUrl?: string }> = [];
+    const results: Array<{ accountId: string; accountName: string; propertyId: string; propertyName: string }> = [];
 
     await Promise.all(
       accounts.map(async (account) => {
@@ -66,7 +66,6 @@ export async function GET() {
               accountName: account.displayName ?? "",
               propertyId: prop.name?.replace("properties/", "") ?? "",
               propertyName: prop.displayName ?? "",
-              websiteUrl: prop.websiteUri ?? undefined,
             });
           }
         } catch {

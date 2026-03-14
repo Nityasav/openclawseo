@@ -31,7 +31,6 @@ interface Ga4Property {
   accountName: string;
   propertyId: string;
   propertyName: string;
-  websiteUrl?: string;
 }
 
 function PropertyPicker({
@@ -84,13 +83,18 @@ function PropertyPicker({
 
   useEffect(() => {
     if (provider === "ga4" && selected) {
-      const prop = ga4Properties.find((p) => p.propertyId === selected);
-      if (prop?.websiteUrl) {
-        const d = prop.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-        setDomain(d);
+      // No websiteUrl available from API — user fills domain manually
+      // Pre-fill with property name as hint if domain is empty
+      if (!domain) {
+        const prop = ga4Properties.find((p) => p.propertyId === selected);
+        if (prop?.propertyName) {
+          // Try to extract domain-like string from property name
+          const cleaned = prop.propertyName.toLowerCase().replace(/[^a-z0-9.-]/g, "");
+          if (cleaned.includes(".")) setDomain(cleaned);
+        }
       }
     }
-  }, [selected, ga4Properties, provider]);
+  }, [selected, ga4Properties, provider, domain]);
 
   async function handleSave() {
     if (!selected || !domain) return;
