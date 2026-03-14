@@ -449,7 +449,7 @@ export function SettingsView({
               isConnected={connectedProviders.includes("gsc")}
               connectHref="/api/v1/integrations/gsc/connect"
             >
-              {connectedProviders.includes("gsc") && (
+              {connectedProviders.includes("gsc") ? (
                 <div>
                   <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
                   <PropertyPicker key={`gsc-${refreshKey}`} provider="gsc" onSaved={handlePropertySaved} />
@@ -457,7 +457,7 @@ export function SettingsView({
                     Reconnect / change account
                   </a>
                 </div>
-              )}
+              ) : undefined}
             </IntegrationCard>
             <IntegrationCard
               name="Google Analytics 4"
@@ -466,7 +466,7 @@ export function SettingsView({
               isConnected={connectedProviders.includes("ga4")}
               connectHref="/api/v1/integrations/ga4/connect"
             >
-              {connectedProviders.includes("ga4") && (
+              {connectedProviders.includes("ga4") ? (
                 <div>
                   <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
                   <PropertyPicker key={`ga4-${refreshKey}`} provider="ga4" onSaved={handlePropertySaved} />
@@ -474,7 +474,7 @@ export function SettingsView({
                     Reconnect / change account
                   </a>
                 </div>
-              )}
+              ) : undefined}
             </IntegrationCard>
             <IntegrationCard
               name="Slack"
