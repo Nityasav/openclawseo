@@ -1,10 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env"],
   "tasks": {
     "build": {
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "GEMINI_API_KEY",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_REDIRECT_URI",
+        "GA4_REDIRECT_URI",
+        "FRAMER_API_KEY",
+        "FRAMER_PROJECT_ID",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "ENCRYPTION_SECRET",
+        "AGENT_SERVICE_URL",
+        "AGENT_WEBHOOK_SECRET",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_SANDBOX_DOMAIN"
+      ]
     },
     "dev": {
       "cache": false,
