@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, ExternalLink, Loader2, Plus, Trash2, XCircle } from "lucide-react";
+import { CheckCircle, ExternalLink, Loader2, Plus, Trash2, XCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,181 @@ interface SettingsViewProps {
   sites: Array<{ id: string; domain: string; gsc_property_url: string | null; ga4_property_id: string | null }>;
   orgId: string;
   integrations: Array<{ provider: string; config_json: unknown; access_token: string | null }>;
+}
+
+interface GscProperty {
+  siteUrl: string;
+  permissionLevel: string;
+}
+
+interface Ga4Property {
+  accountId: string;
+  accountName: string;
+  propertyId: string;
+  propertyName: string;
+  websiteUrl?: string;
+}
+
+function PropertyPicker({
+  provider,
+  onSaved,
+}: {
+  provider: "gsc" | "ga4";
+  onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [gscProperties, setGscProperties] = useState<GscProperty[]>([]);
+  const [ga4Properties, setGa4Properties] = useState<Ga4Property[]>([]);
+  const [selected, setSelected] = useState<string>("");
+  const [domain, setDomain] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const { toast } = useToast();
+
+  const fetchProperties = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/v1/integrations/${provider}/properties`);
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error ?? "Failed to fetch properties");
+        return;
+      }
+      if (provider === "gsc") setGscProperties(data.data);
+      else setGa4Properties(data.data);
+    } catch {
+      setError("Network error fetching properties");
+    } finally {
+      setLoading(false);
+    }
+  }, [provider]);
+
+  useEffect(() => {
+    fetchProperties();
+  }, [fetchProperties]);
+
+  // Auto-fill domain from selected GSC property
+  useEffect(() => {
+    if (provider === "gsc" && selected) {
+      // Strip protocol and trailing slash for domain
+      const d = selected.replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/^sc-domain:/, "");
+      setDomain(d);
+    }
+  }, [selected, provider]);
+
+  useEffect(() => {
+    if (provider === "ga4" && selected) {
+      const prop = ga4Properties.find((p) => p.propertyId === selected);
+      if (prop?.websiteUrl) {
+        const d = prop.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+        setDomain(d);
+      }
+    }
+  }, [selected, ga4Properties, provider]);
+
+  async function handleSave() {
+    if (!selected || !domain) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/v1/integrations/select-property", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, value: selected, domain }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: `${provider.toUpperCase()} property saved!`, description: domain });
+        onSaved();
+      } else {
+        setError(data.error ?? "Failed to save");
+      }
+    } catch {
+      setError("Network error saving property");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Fetching your {provider === "gsc" ? "Search Console" : "Analytics"} properties...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-red-600">{error}</p>
+        <Button size="sm" variant="outline" onClick={fetchProperties}>
+          <RefreshCw className="mr-2 h-3 w-3" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const items = provider === "gsc"
+    ? gscProperties.map((p) => ({ value: p.siteUrl, label: p.siteUrl, sub: p.permissionLevel }))
+    : ga4Properties.map((p) => ({ value: p.propertyId, label: p.propertyName, sub: `${p.accountName} · ID: ${p.propertyId}` }));
+
+  if (items.length === 0) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-gray-500">No properties found. Make sure you have access in {provider === "gsc" ? "Google Search Console" : "Google Analytics"}.</p>
+        <Button size="sm" variant="outline" onClick={fetchProperties}>
+          <RefreshCw className="mr-2 h-3 w-3" /> Refresh
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 mt-3">
+      <div>
+        <Label className="text-sm font-medium">Select {provider === "gsc" ? "Search Console Property" : "GA4 Property"}</Label>
+        <div className="mt-1 space-y-1 max-h-48 overflow-y-auto rounded-md border p-1">
+          {items.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setSelected(item.value)}
+              className={cn(
+                "w-full text-left rounded-md px-3 py-2 text-sm transition-colors",
+                selected === item.value
+                  ? "bg-blue-50 border border-blue-200 text-blue-900"
+                  : "hover:bg-gray-50"
+              )}
+            >
+              <p className="font-medium truncate">{item.label}</p>
+              <p className="text-xs text-gray-500 truncate">{item.sub}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-sm font-medium">Domain</Label>
+        <Input
+          className="mt-1"
+          placeholder="example.com"
+          value={domain}
+          onChange={(e) => setDomain(e.target.value)}
+        />
+        <p className="text-xs text-gray-400 mt-1">Auto-filled from selection — edit if needed</p>
+      </div>
+
+      <Button
+        size="sm"
+        onClick={handleSave}
+        disabled={saving || !selected || !domain}
+      >
+        {saving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+        Save Property
+      </Button>
+    </div>
+  );
 }
 
 function IntegrationCard({
@@ -231,18 +406,25 @@ export function SettingsView({
   defaultTab,
   successMessage,
   errorMessage,
-  connectedProviders,
+  connectedProviders: initialConnectedProviders,
   sites,
   orgId,
   integrations,
 }: SettingsViewProps) {
+  const [connectedProviders, setConnectedProviders] = useState(initialConnectedProviders);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  function handlePropertySaved() {
+    setRefreshKey((k) => k + 1);
+  }
+
   return (
     <div className="space-y-6">
       {successMessage && (
         <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700 border border-green-200">
           <CheckCircle className="h-4 w-4" />
-          {successMessage === "gsc_connected" && "Google Search Console connected successfully!"}
-          {successMessage === "ga4_connected" && "Google Analytics 4 connected successfully!"}
+          {successMessage === "gsc_connected" && "Google Search Console connected! Now select your property below."}
+          {successMessage === "ga4_connected" && "Google Analytics 4 connected! Now select your property below."}
           {successMessage === "migrated" && "Sandbox migrated to live account!"}
           {!["gsc_connected", "ga4_connected", "migrated"].includes(successMessage) && successMessage}
         </div>
@@ -269,14 +451,34 @@ export function SettingsView({
               provider="gsc"
               isConnected={connectedProviders.includes("gsc")}
               connectHref="/api/v1/integrations/gsc/connect"
-            />
+            >
+              {connectedProviders.includes("gsc") && (
+                <div>
+                  <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
+                  <PropertyPicker key={`gsc-${refreshKey}`} provider="gsc" onSaved={handlePropertySaved} />
+                  <a href="/api/v1/integrations/gsc/connect" className="text-xs text-gray-400 hover:underline mt-2 block">
+                    Reconnect / change account
+                  </a>
+                </div>
+              )}
+            </IntegrationCard>
             <IntegrationCard
               name="Google Analytics 4"
               description="Import sessions, conversions, and traffic data"
               provider="ga4"
               isConnected={connectedProviders.includes("ga4")}
               connectHref="/api/v1/integrations/ga4/connect"
-            />
+            >
+              {connectedProviders.includes("ga4") && (
+                <div>
+                  <p className="text-xs text-green-600 font-medium mb-2">✓ Connected — select which property to track:</p>
+                  <PropertyPicker key={`ga4-${refreshKey}`} provider="ga4" onSaved={handlePropertySaved} />
+                  <a href="/api/v1/integrations/ga4/connect" className="text-xs text-gray-400 hover:underline mt-2 block">
+                    Reconnect / change account
+                  </a>
+                </div>
+              )}
+            </IntegrationCard>
             <IntegrationCard
               name="Slack"
               description="Receive automated SEO reports in your Slack workspace"
