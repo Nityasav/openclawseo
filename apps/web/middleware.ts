@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   // Protect dashboard routes
   if (pathname.startsWith("/dashboard") && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
@@ -39,12 +39,12 @@ export async function middleware(request: NextRequest) {
   // Protect sandbox control panel
   if (pathname.startsWith("/sandbox/control") && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
   // Redirect logged-in users away from login
-  if (pathname === "/auth/login" && user) {
+  if (pathname === "/login" && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard/overview";
     return NextResponse.redirect(url);
