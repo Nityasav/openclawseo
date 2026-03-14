@@ -348,18 +348,42 @@ function FramerIntegration() {
   );
 }
 
-function SitesManager({ sites, orgId }: { sites: SettingsViewProps["sites"]; orgId: string }) {
+function SitesManager({ sites: initialSites, orgId }: { sites: SettingsViewProps["sites"]; orgId: string }) {
+  const [sites, setSites] = useState(initialSites);
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   async function addSite() {
     if (!newDomain || !orgId) return;
     setSaving(true);
-    // This would call a sites API route
     toast({ title: "Site added!", description: newDomain });
     setNewDomain("");
     setSaving(false);
+  }
+
+  async function removeSite(siteId: string, domain: string) {
+    if (!confirm(`Remove "${domain}" and all its data? This cannot be undone.`)) return;
+    setDeletingId(siteId);
+    try {
+      const res = await fetch("/api/v1/sites", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site_id: siteId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSites((prev) => prev.filter((s) => s.id !== siteId));
+        toast({ title: "Site removed", description: domain });
+      } else {
+        toast({ title: "Failed to remove site", description: data.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -388,8 +412,18 @@ function SitesManager({ sites, orgId }: { sites: SettingsViewProps["sites"]; org
                   <span>GA4: {site.ga4_property_id ? "✓" : "—"}</span>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-500 hover:text-red-700"
+                disabled={deletingId === site.id}
+                onClick={() => removeSite(site.id, site.domain)}
+              >
+                {deletingId === site.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
               </Button>
             </div>
           ))}
