@@ -332,7 +332,7 @@ export function RankingsView({
             </Button>
           ))}
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} strokeWidth={1.5} />
           </Button>
         </div>
       </div>
@@ -450,7 +450,7 @@ export function RankingsView({
                 <CardDescription>All keywords driving traffic from Google</CardDescription>
               </div>
               <Button size="sm" variant="outline" onClick={() => exportCsv("queries")}>
-                <Download className="mr-2 h-4 w-4" /> Export CSV
+                <Download className="mr-1.5 h-3 w-3" strokeWidth={1.5} /> Export CSV
               </Button>
             </CardHeader>
             <CardContent>
@@ -523,7 +523,7 @@ export function RankingsView({
                 <CardDescription>Which pages are indexed and receiving impressions/clicks</CardDescription>
               </div>
               <Button size="sm" variant="outline" onClick={() => exportCsv("pages")}>
-                <Download className="mr-2 h-4 w-4" /> Export CSV
+                <Download className="mr-1.5 h-3 w-3" strokeWidth={1.5} /> Export CSV
               </Button>
             </CardHeader>
             <CardContent>
@@ -661,7 +661,7 @@ export function RankingsView({
                 <CardDescription>Top 50 countries by clicks</CardDescription>
               </div>
               <Button size="sm" variant="outline" onClick={() => exportCsv("countries")}>
-                <Download className="mr-2 h-4 w-4" /> Export CSV
+                <Download className="mr-1.5 h-3 w-3" strokeWidth={1.5} /> Export CSV
               </Button>
             </CardHeader>
             <CardContent>
