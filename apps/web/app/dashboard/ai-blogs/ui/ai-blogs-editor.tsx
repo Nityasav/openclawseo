@@ -41,6 +41,7 @@ interface Props {
   initialBlogs: AiBlog[];
   suggestedKeyword: string;
   suggestedPrompt: string;
+  fromKeywordFix?: boolean;
   stats: Stats;
 }
 
@@ -49,12 +50,12 @@ export function AiBlogsEditor({
   initialBlogs,
   suggestedKeyword,
   suggestedPrompt,
+  fromKeywordFix = false,
   stats,
 }: Props) {
   const [blogs, setBlogs] = useState<AiBlog[]>(initialBlogs);
   const [activeId, setActiveId] = useState<string | null>(initialBlogs[0]?.id ?? null);
   const [primaryKeyword, setPrimaryKeyword] = useState(suggestedKeyword);
-  const [secondaryKeyword, setSecondaryKeyword] = useState("");
   const [prompt, setPrompt] = useState(suggestedPrompt);
   const [title, setTitle] = useState("");
   const [html, setHtml] = useState("");
@@ -167,7 +168,6 @@ export function AiBlogsEditor({
   function hydrateEditorFromBlog(blog: AiBlog) {
     setActiveId(blog.id);
     setPrimaryKeyword(blog.primary_keyword ?? "");
-    setSecondaryKeyword(blog.secondary_keyword ?? "");
     setPrompt(blog.prompt ?? "");
     setTitle(blog.title);
     setHtml(blog.content_html ?? "");
@@ -187,7 +187,6 @@ export function AiBlogsEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           primaryKeyword,
-          secondaryKeyword: secondaryKeyword || null,
           prompt,
         }),
       });
@@ -222,7 +221,7 @@ export function AiBlogsEditor({
           title,
           html,
           primary_keyword: primaryKeyword || null,
-          secondary_keyword: secondaryKeyword || null,
+          secondary_keyword: null,
           prompt: prompt || null,
           status: nextStatus ?? "draft",
         }),
@@ -369,43 +368,50 @@ export function AiBlogsEditor({
                   <label className="text-sm font-medium">
                     Primary keyword <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    placeholder="e.g. answer engine optimization"
-                    value={primaryKeyword}
-                    onChange={(e) => setPrimaryKeyword(e.target.value)}
-                  />
-                  {suggestedKeyword && !primaryKeyword && (
-                    <p className="text-xs text-muted-foreground">
-                      Suggested from your keyword table: <strong>{suggestedKeyword}</strong>
+                  {fromKeywordFix ? (
+                    <p className="rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                      {primaryKeyword}
                     </p>
+                  ) : (
+                    <>
+                      <Input
+                        placeholder="e.g. answer engine optimization"
+                        value={primaryKeyword}
+                        onChange={(e) => setPrimaryKeyword(e.target.value)}
+                      />
+                      {suggestedKeyword && !primaryKeyword && (
+                        <p className="text-xs text-muted-foreground">
+                          Suggested from your keyword table: <strong>{suggestedKeyword}</strong>
+                        </p>
+                      )}
+                    </>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Secondary keyword</label>
-                  <Input
-                    placeholder="e.g. llm tracking for seo"
-                    value={secondaryKeyword}
-                    onChange={(e) => setSecondaryKeyword(e.target.value)}
-                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
                     Prompt to answer <span className="text-red-500">*</span>
                   </label>
-                  <Textarea
-                    placeholder="e.g. How are answer engines changing SEO strategies for B2B SaaS?"
-                    rows={4}
-                    value={prompt}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setPrompt(e.target.value)
-                    }
-                  />
-                  {suggestedPrompt && !prompt && (
-                    <p className="text-xs text-muted-foreground">
-                      Suggested from recent GEO / LLM queries.
+                  {fromKeywordFix ? (
+                    <p className="whitespace-pre-wrap rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                      {prompt}
                     </p>
+                  ) : (
+                    <>
+                      <Textarea
+                        placeholder="e.g. How are answer engines changing SEO strategies for B2B SaaS?"
+                        rows={4}
+                        value={prompt}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                          setPrompt(e.target.value)
+                        }
+                      />
+                      {suggestedPrompt && !prompt && (
+                        <p className="text-xs text-muted-foreground">
+                          Suggested from recent GEO / LLM queries.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
 

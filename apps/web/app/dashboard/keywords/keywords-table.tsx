@@ -201,7 +201,13 @@ export function KeywordsTable({ keywords, siteId, hasGa4 }: { keywords: Keyword[
                         </span>
                       </td>
                       <td className="py-3">
-                        <button className="text-xs text-white/20 hover:text-white/60 transition-colors">Fix this →</button>
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/dashboard/ai-blogs?primary=${encodeURIComponent(kw.keyword)}&keywordId=${encodeURIComponent(kw.id)}`)}
+                          className="text-xs text-white/20 hover:text-white/60 transition-colors"
+                        >
+                          Fix this →
+                        </button>
                       </td>
                     </tr>
                   );
