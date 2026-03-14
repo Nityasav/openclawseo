@@ -13,6 +13,7 @@ import {
   FileText,
   Zap,
   LogOut,
+  Edit3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/dashboard/keywords", label: "Keywords", icon: Key },
   { href: "/dashboard/rankings", label: "Rankings", icon: LineChart },
   { href: "/dashboard/geo", label: "GEO / LLM", icon: Globe },
+  { href: "/dashboard/ai-blogs", label: "AI-optimized blogs", icon: Edit3 },
   { href: "/dashboard/reports", label: "Reports", icon: FileText },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
