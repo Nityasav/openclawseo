@@ -36,8 +36,9 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/api/v1/auth/callback?next=${redirectTo}`,
-        scopes:
-          "https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly",
+        // Only request basic scopes for sign-in.
+        // GSC + GA4 scopes are requested separately in Settings → Integrations.
+        scopes: "email profile openid",
       },
     });
     if (error) {

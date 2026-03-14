@@ -19,6 +19,7 @@ export function getGa4AuthUrl(): string {
     scope: SCOPES,
     prompt: "consent",
     state: "ga4",
+    include_granted_scopes: true,
   });
 }
 
