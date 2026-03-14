@@ -70,7 +70,7 @@ def analyze_keyword_gaps(state: SEOState) -> SEOState:
     """Use Gemini to analyze keyword gaps and opportunities."""
     logger.info("Analyzing keyword gaps with Gemini")
     try:
-        gsc_summary = json.dumps(state.get("gsc_data", [])[:20], indent=2)
+        gsc_summary = json.dumps(state.get("gsc_data", [])[:10], indent=2)
 
         prompt = f"""You are an expert SEO analyst. Analyze these search analytics and identify keyword opportunities.
 

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
           const rows = await fetchGscData(
             accessToken, refreshToken,
             site.gsc_property_url, startDate, endDate,
-            { dimensions: ["query", "page"], rowLimit: 500 }
+            { dimensions: ["query", "page"], rowLimit: 100 }
           );
           gscData = rows.map((r) => ({
             query: r.keys?.[0] ?? "",
@@ -132,19 +132,25 @@ export async function POST(request: NextRequest) {
 
     const agentServiceUrl = process.env.AGENT_SERVICE_URL;
     if (agentServiceUrl) {
-      fetch(`${agentServiceUrl}/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          run_id: agentRun.id,
-          site_id,
-          run_type,
-          gsc_data: gscData,
-          ga4_data: ga4Data,
-          webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
-          webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
-        }),
-      }).catch((err) => console.error("Agent trigger failed:", err));
+      // Await (with timeout) so Vercel doesn't kill the request before it's sent
+      try {
+        await fetch(`${agentServiceUrl}/run`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            run_id: agentRun.id,
+            site_id,
+            run_type,
+            gsc_data: gscData,
+            ga4_data: ga4Data,
+            webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
+            webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch (err) {
+        console.error("Agent trigger failed:", err);
+      }
     } else {
       // Demo/dev mode: complete synchronously
       await supabase

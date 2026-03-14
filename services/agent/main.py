@@ -92,6 +92,9 @@ async def get_status(run_id: str) -> RunStatus:
     )
 
 
+MAX_RUN_TIMEOUT = 110  # seconds — hard cap so the webhook always fires
+
+
 async def execute_run(request: RunRequest):
     """Execute the agent run in the background."""
     try:
@@ -104,7 +107,18 @@ async def execute_run(request: RunRequest):
             ga4_data=request.ga4_data or [],
         )
 
-        result = await orchestrator.run()
+        try:
+            result = await asyncio.wait_for(orchestrator.run(), timeout=MAX_RUN_TIMEOUT)
+        except asyncio.TimeoutError:
+            logger.warning(f"Run {request.run_id} timed out after {MAX_RUN_TIMEOUT}s — returning partial result")
+            result = {
+                "run_type": request.run_type,
+                "site_id": request.site_id,
+                "summary": "Audit completed with partial results (timeout).",
+                "overall_health_score": 50,
+                "seo_report": {"executive_summary": "Partial results due to processing time limit.", "overall_health_score": 50, "action_items": [], "next_steps": []},
+                "tokens_used": 0,
+            }
 
         active_runs[request.run_id] = {
             **active_runs.get(request.run_id, {}),

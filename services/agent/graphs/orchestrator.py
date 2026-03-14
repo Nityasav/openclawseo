@@ -11,8 +11,9 @@ from graphs.geo_graph import geo_graph
 
 logger = logging.getLogger(__name__)
 
-MAX_RETRIES = 3
-RETRY_BACKOFF_BASE = 2  # exponential backoff base (seconds)
+MAX_RETRIES = 1  # no retries — fail fast so the 110s budget isn't wasted on repeats
+SEO_GRAPH_TIMEOUT = 55  # seconds
+GEO_GRAPH_TIMEOUT = 50  # seconds
 
 
 class OrchestratorGraph:
@@ -61,9 +62,12 @@ class OrchestratorGraph:
             "error": None,
         }
 
-        # LangGraph invoke is synchronous — run in executor
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, seo_graph.invoke, initial_state)
+        # LangGraph invoke is synchronous — run in executor with timeout
+        loop = asyncio.get_running_loop()
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, seo_graph.invoke, initial_state),
+            timeout=SEO_GRAPH_TIMEOUT,
+        )
         return result
 
     async def _run_geo_graph(self) -> dict:
@@ -81,28 +85,20 @@ class OrchestratorGraph:
             "error": None,
         }
 
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, geo_graph.invoke, initial_state)
+        loop = asyncio.get_running_loop()
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, geo_graph.invoke, initial_state),
+            timeout=GEO_GRAPH_TIMEOUT,
+        )
         return result
 
     async def _run_with_retry(self, fn, *args) -> dict:
-        """Execute a function with exponential backoff retry."""
-        last_error = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                return await fn(*args)
-            except Exception as e:
-                last_error = e
-                wait_time = (RETRY_BACKOFF_BASE ** attempt)
-                logger.warning(
-                    f"Attempt {attempt + 1}/{MAX_RETRIES} failed: {e}. "
-                    f"Retrying in {wait_time}s..."
-                )
-                if attempt < MAX_RETRIES - 1:
-                    await asyncio.sleep(wait_time)
-
-        logger.error(f"All {MAX_RETRIES} attempts failed. Last error: {last_error}")
-        return {"error": str(last_error), "report": {}, "geo_report": {}}
+        """Execute a function — single attempt, fail fast."""
+        try:
+            return await fn(*args)
+        except Exception as e:
+            logger.error(f"Graph run failed: {e}")
+            return {"error": str(e), "report": {}, "geo_report": {}}
 
     def _merge_results(self, results: dict) -> dict:
         """Merge SEO + GEO results into a unified report."""

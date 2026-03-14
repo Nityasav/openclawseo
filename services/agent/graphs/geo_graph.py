@@ -15,7 +15,7 @@ import logging
 import time
 from typing import TypedDict, Optional
 from urllib.parse import urlparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait as futures_wait
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -38,7 +38,8 @@ gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 grounding_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Max queries to check via live API calls (each takes ~2-3s)
-MAX_CITATION_CHECKS = 15
+# Kept low so the GEO graph fits within the 50s budget
+MAX_CITATION_CHECKS = 5
 
 
 def extract_json(text: str):
@@ -302,11 +303,14 @@ def check_llm_citations(state: GEOState) -> GEOState:
             "gemini_urls": gemini_result.get("cited_urls", []),
         }
 
-    # Run checks concurrently (I/O bound)
+    # Run checks concurrently (I/O bound) — 30s hard cap so we don't blow the budget
     if queries:
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {executor.submit(_check_one, q): q for q in queries}
-            for future in as_completed(futures):
+            done, not_done = futures_wait(futures, timeout=30)
+            if not_done:
+                logger.warning(f"{len(not_done)} citation checks timed out — skipping")
+            for future in done:
                 try:
                     citation_checks.append(future.result())
                 except Exception as e:
