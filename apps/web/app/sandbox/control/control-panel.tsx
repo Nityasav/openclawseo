@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Plus, RefreshCw, Trash2, GitFork } from "lucide-react";
-import { formatRelativeTime } from "@/lib/utils";
+import { ExternalLink, Plus, RefreshCw, Trash2, GitFork, Link2 } from "lucide-react";
+import { formatTimeUntil } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface Sandbox {
@@ -77,16 +77,25 @@ export function SandboxControlPanel({ sandboxes: initialSandboxes }: { sandboxes
     expired: "secondary",
   };
 
+  function copyDemoLink(sb: Sandbox) {
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/sandbox/demo?token=${encodeURIComponent(sb.access_token)}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link copied", description: "Share this link to open this sandbox." });
+  }
+
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-white/[0.08] bg-white/[0.02]">
         <CardHeader>
-          <CardTitle>Launch New Sandbox</CardTitle>
+          <CardTitle className="text-white">Launch New Sandbox</CardTitle>
+          <p className="text-sm text-white/50 mt-1">
+            Choose a template and role, then launch. Each sandbox gets synthetic data (no real GSC/GA4) and a shareable link for demos or QA.
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={template} onValueChange={setTemplate}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-52 border-white/10 bg-white/[0.04] text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +105,7 @@ export function SandboxControlPanel({ sandboxes: initialSandboxes }: { sandboxes
               </SelectContent>
             </Select>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-40 border-white/10 bg-white/[0.04] text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -113,76 +122,91 @@ export function SandboxControlPanel({ sandboxes: initialSandboxes }: { sandboxes
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-white/[0.08] bg-white/[0.02]">
         <CardHeader>
-          <CardTitle>Active Sandboxes ({sandboxes.length})</CardTitle>
+          <CardTitle className="text-white">Active Sandboxes ({sandboxes.filter((s) => s.status !== "expired").length})</CardTitle>
+          <p className="text-sm text-white/50 mt-1">
+            Open a sandbox in a new tab, copy its shareable link, reset data, fork a copy, or expire it.
+          </p>
         </CardHeader>
         <CardContent>
           {sandboxes.length === 0 ? (
-            <p className="text-sm text-gray-400">No sandboxes yet.</p>
+            <p className="text-sm text-white/50">No sandboxes yet. Launch one above.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
-                    <th className="pb-3 pr-4">ID</th>
+                  <tr className="border-b border-white/[0.06] text-left text-xs font-medium uppercase tracking-wider text-white/50">
+                    <th className="pb-3 pl-4 pr-4 pt-3">ID</th>
                     <th className="pb-3 pr-4">Template</th>
                     <th className="pb-3 pr-4">Role</th>
                     <th className="pb-3 pr-4">Status</th>
                     <th className="pb-3 pr-4">Expires</th>
-                    <th className="pb-3">Actions</th>
+                    <th className="pb-3 pr-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-white/[0.06]">
                   {sandboxes.map((sb) => (
-                    <tr key={sb.id}>
-                      <td className="py-3 pr-4 font-mono text-xs">{sb.id.slice(0, 8)}…</td>
-                      <td className="py-3 pr-4 capitalize">{sb.template.replace("_", " ")}</td>
-                      <td className="py-3 pr-4 capitalize">{sb.role}</td>
+                    <tr key={sb.id} className="transition-colors hover:bg-white/[0.02]">
+                      <td className="py-3 pl-4 pr-4 font-mono text-xs text-white/90">{sb.id.slice(0, 8)}…</td>
+                      <td className="py-3 pr-4 capitalize text-white/90">{sb.template.replace(/_/g, " ")}</td>
+                      <td className="py-3 pr-4 capitalize text-white/90">{sb.role}</td>
                       <td className="py-3 pr-4">
                         <Badge variant={statusVariant[sb.status] ?? "secondary"}>
                           {sb.status}
                         </Badge>
                       </td>
-                      <td className="py-3 pr-4 text-gray-500 text-xs">
-                        {formatRelativeTime(sb.expires_at)}
+                      <td className="py-3 pr-4 text-xs text-white/70">
+                        {formatTimeUntil(sb.expires_at)}
                       </td>
-                      <td className="py-3">
-                        <div className="flex gap-1">
+                      <td className="py-3 pr-4">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
                             asChild
-                            title="Open demo"
+                            title="Open this sandbox in a new tab"
+                            className="text-white/60 hover:text-white"
                           >
-                            <a href="/sandbox/demo" target="_blank">
-                              <ExternalLink className="h-3 w-3" />
+                            <a href={`/sandbox/demo?token=${encodeURIComponent(sb.access_token)}`} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Reset"
+                            title="Copy shareable link"
+                            className="text-white/60 hover:text-white"
+                            onClick={() => copyDemoLink(sb)}
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Reset sandbox data"
+                            className="text-white/60 hover:text-white"
                             onClick={() => resetSandbox(sb.id)}
                           >
-                            <RefreshCw className="h-3 w-3" />
+                            <RefreshCw className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Fork"
+                            title="Fork (clone this sandbox)"
+                            className="text-white/60 hover:text-white"
                             onClick={() => forkSandbox(sb.id)}
                           >
-                            <GitFork className="h-3 w-3" />
+                            <GitFork className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Expire"
-                            className="text-red-500 hover:text-red-700"
+                            title="Expire (disable link)"
+                            className="text-white/60 hover:text-red-400 hover:bg-red-500/10"
                             onClick={() => expireSandbox(sb.id)}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </td>

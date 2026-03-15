@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   // Gate: redirect to onboarding if user has no sites set up yet
   const { data: profile } = await supabase
     .from("profiles")
-    .select("org_id")
+    .select("org_id, role")
     .eq("id", user.id)
     .single();
 
@@ -43,7 +43,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0a]">
-      <Sidebar />
+      <Sidebar userRole={profile?.role ?? undefined} />
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
