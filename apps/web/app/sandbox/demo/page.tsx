@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { SandboxProvider } from "@/lib/sandbox/context";
 import { DemoInterface } from "./demo-interface";
@@ -25,6 +25,22 @@ interface SandboxData {
 }
 
 export default function SandboxDemoPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <p className="text-sm text-white/70">Spinning up your demo environment...</p>
+          <p className="text-xs text-white/40">This takes under 5 seconds</p>
+        </div>
+      }
+    >
+      <SandboxDemoContent />
+    </Suspense>
+  );
+}
+
+function SandboxDemoContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [loading, setLoading] = useState(true);
