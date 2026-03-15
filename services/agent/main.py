@@ -1,5 +1,5 @@
 """
-SEOClaw Agent Service — FastAPI entrypoint
+Crawl Agent Service — FastAPI entrypoint
 Runs the LangGraph-based SEO/GEO intelligence agents
 """
 
@@ -22,7 +22,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SEOClaw Agent Service", version="0.1.0")
+app = FastAPI(title="Crawl Agent Service", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,7 +57,7 @@ class RunStatus(BaseModel):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "seoclaw-agent"}
+    return {"status": "ok", "service": "crawl-agent"}
 
 
 @app.post("/run")
@@ -170,7 +170,7 @@ async def notify_webhook(
     payload = {
         "run_id": run_id,
         "status": status,
-        "secret": secret or os.getenv("AGENT_WEBHOOK_SECRET", "seoclaw_webhook_secret_2026"),
+        "secret": secret or os.getenv("AGENT_WEBHOOK_SECRET", "crawl_webhook_secret_2026"),
     }
     if result:
         payload["result_json"] = result

@@ -61,7 +61,7 @@ export function KeywordsTable({ keywords, siteId, hasGa4 }: { keywords: Keyword[
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "seoclaw-keywords.csv";
+    a.download = "crawl-keywords.csv";
     a.click();
   }
 

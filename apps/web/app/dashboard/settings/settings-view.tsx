@@ -532,7 +532,7 @@ export function SettingsView({
           <Card>
             <CardHeader>
               <CardTitle>Tracked Sites</CardTitle>
-              <CardDescription>Manage the domains you track with SEOClaw</CardDescription>
+              <CardDescription>Manage the domains you track with Crawl</CardDescription>
             </CardHeader>
             <CardContent>
               <SitesManager sites={sites} orgId={orgId} />

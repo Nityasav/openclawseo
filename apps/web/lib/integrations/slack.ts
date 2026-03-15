@@ -116,10 +116,10 @@ export async function sendTestMessage(webhookUrl: string): Promise<void> {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "✅ *SEOClaw Slack integration is working!* You'll receive SEO reports here.",
+          text: "✅ *Crawl Slack integration is working!* You'll receive SEO reports here.",
         },
       },
     ],
-    text: "SEOClaw test message",
+    text: "Crawl test message",
   });
 }

@@ -6,7 +6,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SEOClaw — Autonomous SEO & GEO Platform",
+  title: "Crawl — Autonomous SEO & GEO Platform",
   description:
     "24/7 autonomous SEO and Generative Engine Optimization platform. Track rankings, find keyword gaps, and optimize for LLM citations.",
 };

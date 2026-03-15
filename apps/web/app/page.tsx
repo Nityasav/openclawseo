@@ -12,7 +12,7 @@ export default function HomePage() {
           <span className="text-white/90">itself</span>
         </h1>
         <p className="text-white/40 text-base sm:text-lg max-w-xl mb-12">
-          SEOClaw autonomously tracks rankings, finds keyword gaps, and optimizes
+          Crawl autonomously tracks rankings, finds keyword gaps, and optimizes
           your content for LLM citation visibility — 24/7, no manual work required.
         </p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

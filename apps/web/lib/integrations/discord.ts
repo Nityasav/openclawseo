@@ -86,14 +86,14 @@ export function buildDiscordReportMessage(report: {
   }
 
   return {
-    username: "SEOClaw",
+    username: "Crawl",
     embeds: [
       {
         title: `📊 ${report.title}`,
         description: `**${report.domain}**\n\n${report.summary}`,
         color: scoreColor,
         fields,
-        footer: { text: "SEOClaw · Autonomous SEO Intelligence" },
+        footer: { text: "Crawl · Autonomous SEO Intelligence" },
         timestamp: new Date().toISOString(),
       },
     ],
@@ -102,13 +102,13 @@ export function buildDiscordReportMessage(report: {
 
 export async function sendDiscordTestMessage(webhookUrl: string): Promise<void> {
   await sendDiscordMessage(webhookUrl, {
-    username: "SEOClaw",
+    username: "Crawl",
     embeds: [
       {
         title: "✅ Discord integration connected!",
         description: "You'll receive SEO audit reports here automatically.",
         color: 0x22c55e,
-        footer: { text: "SEOClaw · Autonomous SEO Intelligence" },
+        footer: { text: "Crawl · Autonomous SEO Intelligence" },
       },
     ],
   });

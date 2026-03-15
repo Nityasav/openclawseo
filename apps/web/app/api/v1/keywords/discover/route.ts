@@ -111,7 +111,7 @@ export async function POST() {
     for (const url of pagesToScrape) {
       try {
         const response = await fetch(url, {
-          headers: { "User-Agent": "OpenClawSEO Bot/1.0" },
+          headers: { "User-Agent": "Crawl Bot/1.0" },
           signal: AbortSignal.timeout(10000),
         });
         if (response.ok) {

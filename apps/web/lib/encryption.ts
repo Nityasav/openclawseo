@@ -3,7 +3,7 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypt
 const ALGORITHM = "aes-256-cbc";
 
 function getKey(): Buffer {
-  const secret = process.env.ENCRYPTION_SECRET ?? "seoclaw_aes256_secret_key_32chars!!";
+  const secret = process.env.ENCRYPTION_SECRET ?? "crawl_aes256_secret_key_32chars!!!!!";
   // Hash to ensure exactly 32 bytes
   return createHash("sha256").update(secret).digest();
 }

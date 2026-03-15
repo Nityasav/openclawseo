@@ -9,4 +9,4 @@ services:
       - SANDBOX_MODE=true
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     labels:
-      - "seoclaw.sandbox=true"
+      - "crawl.sandbox=true"

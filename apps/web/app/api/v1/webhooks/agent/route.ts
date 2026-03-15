@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const { run_id, status, result_json, error_message, tokens_used, secret } = parsed.data;
 
     // Verify webhook secret
-    const expectedSecret = process.env.AGENT_WEBHOOK_SECRET ?? "seoclaw_webhook_secret_2026";
+    const expectedSecret = process.env.AGENT_WEBHOOK_SECRET ?? "crawl_webhook_secret_2026";
     if (secret !== expectedSecret) {
       return NextResponse.json({ success: false, error: "Invalid secret" }, { status: 403 });
     }

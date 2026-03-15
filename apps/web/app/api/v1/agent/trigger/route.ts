@@ -5,6 +5,9 @@ import { decrypt } from "@/lib/encryption";
 import { fetchGscData } from "@/lib/integrations/gsc";
 import { fetchGA4Data } from "@/lib/integrations/ga4";
 
+// Extend Vercel function lifetime so the fire-and-forget agent call completes
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient();
@@ -132,25 +135,28 @@ export async function POST(request: NextRequest) {
 
     const agentServiceUrl = process.env.AGENT_SERVICE_URL;
     if (agentServiceUrl) {
-      // Await (with timeout) so Vercel doesn't kill the request before it's sent
-      try {
-        await fetch(`${agentServiceUrl}/run`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            run_id: agentRun.id,
-            site_id,
-            run_type,
-            gsc_data: gscData,
-            ga4_data: ga4Data,
-            webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
-            webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
-      } catch (err) {
-        console.error("Agent trigger failed:", err);
-      }
+      // Respond to the client immediately, then fire the agent call.
+      // maxDuration = 60 keeps the Vercel function alive long enough to send it.
+      const response = NextResponse.json({
+        success: true,
+        data: { run_id: agentRun.id, status: "pending" },
+      });
+
+      fetch(`${agentServiceUrl}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          run_id: agentRun.id,
+          site_id,
+          run_type,
+          gsc_data: gscData,
+          ga4_data: ga4Data,
+          webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
+          webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
+        }),
+      }).catch((err) => console.error("Agent trigger failed:", err));
+
+      return response;
     } else {
       // Demo/dev mode: complete synchronously
       await supabase

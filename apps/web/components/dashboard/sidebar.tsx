@@ -43,7 +43,7 @@ export function Sidebar() {
       <div className="flex h-14 items-center px-5 border-b border-white/[0.06]">
         <Link href="/dashboard/overview" className="flex items-center gap-2.5">
           <Zap className="h-4 w-4 text-white" strokeWidth={1.5} />
-          <span className="text-sm font-medium tracking-wide text-white">SEOClaw</span>
+          <span className="text-sm font-medium tracking-wide text-white">Crawl</span>
         </Link>
       </div>
 

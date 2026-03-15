@@ -11,7 +11,7 @@ export default async function BlogPage() {
     <main className="container mx-auto max-w-4xl px-4 py-16">
       <h1 className="mb-2 text-4xl font-bold">SEO & GEO Insights</h1>
       <p className="mb-12 text-lg text-gray-600">
-        Tips, strategies, and updates from the SEOClaw team.
+        Tips, strategies, and updates from the Crawl team.
       </p>
 
       {posts.length === 0 ? (

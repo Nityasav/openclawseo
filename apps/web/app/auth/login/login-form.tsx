@@ -89,8 +89,8 @@ export function LoginForm({ error: initialError, next }: LoginFormProps) {
         <CardTitle className="text-white">{mode === "signin" ? "Sign in" : "Create account"}</CardTitle>
         <CardDescription className="text-white/40">
           {mode === "signin"
-            ? "Welcome back — sign in to your SEOClaw account"
-            : "Get started with SEOClaw for free"}
+            ? "Welcome back — sign in to your Crawl account"
+            : "Get started with Crawl for free"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
