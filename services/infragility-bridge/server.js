@@ -81,7 +81,7 @@ app.post('/api/send-message', async (req, res) => {
 
   try {
     const channel = await discord.channels.fetch(CHANNEL_ID);
-    await channel.send(message);
+    await channel.send(`<@${CEO_BOT_ID}> ${message}`);
     console.log(`[Web → Discord] ${message.substring(0, 100)}`);
 
     // Wait up to 60 s for the CEO bot to reply
@@ -121,7 +121,7 @@ app.post('/api/optimization-request', async (req, res) => {
       .join(', ');
 
     const lines = [
-      '**New Optimization Request**',
+      `<@${CEO_BOT_ID}> **New Optimization Request**`,
       `**Repository:** ${request.repositoryUrl}`,
       `**Type:** ${(request.optimizationType || 'both').toUpperCase()}`,
       `**Priority:** ${request.priority || 'normal'}`,
