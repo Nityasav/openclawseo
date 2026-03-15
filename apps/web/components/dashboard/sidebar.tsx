@@ -15,6 +15,7 @@ import {
   LogOut,
   Edit3,
   Box,
+  Bot,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/dashboard/geo", label: "GEO / LLM", icon: Globe },
   { href: "/dashboard/ai-blogs", label: "AI Blogs", icon: Edit3 },
   { href: "/dashboard/reports", label: "Reports", icon: FileText },
+  { href: "/dashboard/agent-chat", label: "Agent Chat", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
