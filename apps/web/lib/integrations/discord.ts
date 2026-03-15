@@ -14,6 +14,10 @@ export interface DiscordMessage {
   embeds?: DiscordEmbed[];
 }
 
+function truncate(str: string, max: number): string {
+  return str.length > max ? str.slice(0, max - 1) + "…" : str;
+}
+
 export async function sendDiscordMessage(webhookUrl: string, message: DiscordMessage): Promise<void> {
   const response = await fetch(webhookUrl, {
     method: "POST",
@@ -22,7 +26,8 @@ export async function sendDiscordMessage(webhookUrl: string, message: DiscordMes
   });
 
   if (!response.ok) {
-    throw new Error(`Discord webhook failed: ${response.status} ${response.statusText}`);
+    const body = await response.text().catch(() => "");
+    throw new Error(`Discord webhook failed: ${response.status} ${response.statusText}${body ? ` — ${body}` : ""}`);
   }
 }
 
@@ -54,34 +59,40 @@ export function buildDiscordReportMessage(report: {
   if (report.criticalIssues && report.criticalIssues.length > 0) {
     fields.push({
       name: "🚨 Critical Issues",
-      value: report.criticalIssues.slice(0, 3).map((i) => `• ${i.title}`).join("\n"),
+      value: truncate(report.criticalIssues.slice(0, 3).map((i) => `• ${i.title}`).join("\n"), 1024),
     });
   }
 
   if (report.topWins && report.topWins.length > 0) {
     fields.push({
       name: "✅ Top Wins",
-      value: report.topWins.slice(0, 3).map((w) => `• ${w.title}`).join("\n"),
+      value: truncate(report.topWins.slice(0, 3).map((w) => `• ${w.title}`).join("\n"), 1024),
     });
   }
 
   if (report.actionItems && report.actionItems.length > 0) {
     fields.push({
       name: "📋 Action Items",
-      value: report.actionItems
-        .slice(0, 5)
-        .map((a, i) => `${i + 1}. ${a.action}${a.effort ? ` *(${a.effort} effort)*` : ""}`)
-        .join("\n"),
+      value: truncate(
+        report.actionItems
+          .slice(0, 5)
+          .map((a, i) => `${i + 1}. ${a.action}${a.effort ? ` *(${a.effort} effort)*` : ""}`)
+          .join("\n"),
+        1024
+      ),
     });
   }
 
   if (report.keywordGaps && report.keywordGaps.length > 0) {
     fields.push({
       name: "🎯 Keyword Opportunities",
-      value: report.keywordGaps
-        .slice(0, 5)
-        .map((k) => `• **${k.keyword}** — Pos. ${k.current_position} (score: ${k.opportunity_score})`)
-        .join("\n"),
+      value: truncate(
+        report.keywordGaps
+          .slice(0, 5)
+          .map((k) => `• **${k.keyword}** — Pos. ${k.current_position} (score: ${k.opportunity_score})`)
+          .join("\n"),
+        1024
+      ),
     });
   }
 
@@ -89,8 +100,8 @@ export function buildDiscordReportMessage(report: {
     username: "Crawl",
     embeds: [
       {
-        title: `📊 ${report.title}`,
-        description: `**${report.domain}**\n\n${report.summary}`,
+        title: truncate(`📊 ${report.title}`, 256),
+        description: truncate(`**${report.domain}**\n\n${report.summary}`, 4096),
         color: scoreColor,
         fields,
         footer: { text: "Crawl · Autonomous SEO Intelligence" },
