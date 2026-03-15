@@ -2,10 +2,9 @@
 GEO / LLM Visibility Graph — LangGraph graph for GEO optimization
 Nodes: fetch_target_queries → check_llm_citations → schema_optimizer → generate_geo_report
 
-Citation checking uses a 3-tier approach:
-  1. Perplexity Sonar API — sends query, gets back explicit citations[] (most accurate)
-  2. Gemini with Google Search grounding — checks which URLs Gemini cites
-  3. Smart fallback — position/CTR/impressions decay curve (not random)
+Citation checking uses a 2-tier approach:
+  1. Gemini with Google Search grounding — checks which URLs Gemini cites
+  2. Smart fallback — position/CTR/impressions decay curve (not random)
 """
 
 import os
@@ -27,7 +26,6 @@ from langgraph.graph import StateGraph, END
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -68,44 +66,6 @@ def _extract_domain(gsc_data: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 # Citation check helpers — each returns {"is_cited": bool, "cited_urls": list}
 # ---------------------------------------------------------------------------
-
-def _check_perplexity(query: str, domain: str) -> dict:
-    """
-    Ask Perplexity Sonar a question and check if the site domain is in citations.
-    Perplexity returns an explicit `citations` array — the most accurate signal.
-    Requires PERPLEXITY_API_KEY in .env
-    """
-    if not PERPLEXITY_API_KEY:
-        return {"is_cited": False, "cited_urls": [], "source": "perplexity", "available": False}
-
-    try:
-        response = httpx.post(
-            "https://api.perplexity.ai/chat/completions",
-            headers={
-                "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "sonar",
-                "messages": [{"role": "user", "content": query}],
-            },
-            timeout=20.0,
-        )
-        data = response.json()
-        citations = data.get("citations", [])
-        is_cited = any(domain in url for url in citations)
-        citation_url = next((url for url in citations if domain in url), None)
-        return {
-            "is_cited": is_cited,
-            "cited_urls": citations[:5],
-            "citation_url": citation_url,
-            "source": "perplexity",
-            "available": True,
-        }
-    except Exception as e:
-        logger.warning(f"Perplexity check failed for '{query}': {e}")
-        return {"is_cited": False, "cited_urls": [], "source": "perplexity", "available": True}
-
 
 def _check_gemini_grounding(query: str, domain: str) -> dict:
     """
@@ -235,27 +195,23 @@ def fetch_target_queries(state: GEOState) -> GEOState:
 
 def check_llm_citations(state: GEOState) -> GEOState:
     """
-    Check if the site is actually cited by LLMs for each target query.
+    Check if the site is actually cited by Gemini for each target query.
 
-    Tier 1 — Perplexity API: explicit citations array (requires PERPLEXITY_API_KEY)
-    Tier 2 — Gemini grounding: Google Search grounding chunks (uses GEMINI_API_KEY)
-    Tier 3 — Smart fallback: position/CTR/impressions decay curve (no API needed)
+    Tier 1 — Gemini grounding: Google Search grounding chunks (uses GEMINI_API_KEY)
+    Tier 2 — Smart fallback: position/CTR/impressions decay curve (no API needed)
     """
     queries = state.get("target_queries", [])
     domain = state.get("domain", "")
 
-    has_perplexity = bool(PERPLEXITY_API_KEY)
     has_gemini = bool(GEMINI_API_KEY)
 
-    if has_perplexity or has_gemini:
+    if has_gemini:
         logger.info(
-            f"Checking LLM citations via live APIs "
-            f"(perplexity={'yes' if has_perplexity else 'no'}, "
-            f"gemini_grounding={'yes' if has_gemini else 'no'}) "
+            f"Checking LLM citations via Gemini grounding "
             f"for {len(queries)} queries on domain '{domain}'"
         )
     else:
-        logger.info("No API keys available — using smart position/CTR fallback")
+        logger.info("No Gemini API key — using smart position/CTR fallback")
 
     citation_checks = []
 
@@ -265,22 +221,16 @@ def check_llm_citations(state: GEOState) -> GEOState:
         ctr = float(q.get("ctr", 0))
         impressions = int(q.get("impressions", 0))
 
-        perplexity_result = {"is_cited": False, "cited_urls": [], "available": has_perplexity}
         gemini_result = {"is_cited": False, "cited_urls": [], "available": has_gemini}
-
-        if has_perplexity:
-            perplexity_result = _check_perplexity(query_text, domain)
-            time.sleep(0.5)  # Respect rate limits
 
         if has_gemini:
             gemini_result = _check_gemini_grounding(query_text, domain)
             time.sleep(0.3)
 
         # Determine overall citation status
-        if has_perplexity or has_gemini:
-            # Real API result: cited if either source cites us
-            is_cited = perplexity_result["is_cited"] or gemini_result["is_cited"]
-            citation_url = perplexity_result.get("citation_url") or gemini_result.get("citation_url")
+        if has_gemini:
+            is_cited = gemini_result["is_cited"]
+            citation_url = gemini_result.get("citation_url")
         else:
             # Smart fallback: stochastic based on real citation probability model
             import random
@@ -296,10 +246,7 @@ def check_llm_citations(state: GEOState) -> GEOState:
             "ctr": round(ctr * 100, 2),
             "is_cited": is_cited,
             "citation_url": citation_url,
-            # Per-source breakdown
-            "perplexity_cited": perplexity_result["is_cited"],
             "gemini_cited": gemini_result["is_cited"],
-            "perplexity_urls": perplexity_result.get("cited_urls", []),
             "gemini_urls": gemini_result.get("cited_urls", []),
         }
 
@@ -368,30 +315,16 @@ def generate_geo_report(state: GEOState) -> GEOState:
         cited = [c for c in citation_checks if c.get("is_cited")]
         citation_rate = (len(cited) / total * 100) if total > 0 else 0
 
-        # Per-source citation rates (real data when available)
-        perplexity_cited = sum(1 for c in citation_checks if c.get("perplexity_cited"))
+        # Gemini citation rate (sole source)
         gemini_cited = sum(1 for c in citation_checks if c.get("gemini_cited"))
-
-        perplexity_rate = (perplexity_cited / total * 100) if total > 0 else 0
         gemini_rate = (gemini_cited / total * 100) if total > 0 else 0
 
-        # ChatGPT isn't directly checked — estimate from Perplexity correlation
-        # (Perplexity and ChatGPT browse similar sources; ChatGPT is slightly lower recall)
-        chatgpt_estimate = round(perplexity_rate * 0.75, 1)
-
-        # Overall LLM visibility score: weighted average of what we know
-        has_perplexity = bool(PERPLEXITY_API_KEY)
+        # Overall LLM visibility score = Gemini citation rate
         has_gemini = bool(GEMINI_API_KEY)
-
-        if has_perplexity and has_gemini:
-            llm_score = round((perplexity_rate * 0.5 + gemini_rate * 0.3 + chatgpt_estimate * 0.2))
-        elif has_perplexity:
-            llm_score = round(perplexity_rate * 0.7 + chatgpt_estimate * 0.3)
-        elif has_gemini:
-            llm_score = round(gemini_rate * 0.8)
+        if has_gemini:
+            llm_score = round(gemini_rate)
         else:
-            # Fallback — derived from the smart probability scores
-            llm_score = round(citation_rate * 0.7)
+            llm_score = round(citation_rate)
 
         llm_score = min(100, llm_score)
 
@@ -402,10 +335,8 @@ def generate_geo_report(state: GEOState) -> GEOState:
 
 Real citation data collected:
 - Total queries checked: {total}
-- Queries where site was cited by any LLM: {len(cited)} ({citation_rate:.1f}%)
-- Perplexity citation rate: {perplexity_rate:.1f}% ({perplexity_cited}/{total} queries)
+- Queries where site was cited by Gemini: {len(cited)} ({citation_rate:.1f}%)
 - Gemini citation rate: {gemini_rate:.1f}% ({gemini_cited}/{total} queries)
-- ChatGPT citation estimate: {chatgpt_estimate:.1f}% (estimated from Perplexity correlation)
 - Overall LLM visibility score: {llm_score}/100
 
 Schema recommendations: {json.dumps(schema_recs[:3], indent=2)}
@@ -419,8 +350,6 @@ Return JSON (ONLY valid JSON):
 {{
   "llm_visibility_score": {llm_score},
   "score_breakdown": {{
-    "chatgpt_visibility": {chatgpt_estimate},
-    "perplexity_visibility": {perplexity_rate:.1f},
     "gemini_visibility": {gemini_rate:.1f}
   }},
   "cited_queries": {len(cited)},

@@ -4,22 +4,31 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SandboxProvider } from "@/lib/sandbox/context";
 import { DemoInterface } from "./demo-interface";
+import { WalkthroughRecorder } from "./walkthrough-recorder";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { generateSandboxData } from "@/lib/sandbox/generator";
-import type { SyntheticSite } from "@/lib/sandbox/generator";
+import { generateScenarioData } from "@/lib/sandbox/generator";
+import { isScenarioConfig } from "@/lib/sandbox/scenario";
+import type { SyntheticSiteV2 } from "@/lib/sandbox/generator";
+import type { ScenarioConfig, SandboxFeatureFlags, WalkthroughStep } from "@/lib/sandbox/scenario";
+
+interface SandboxData {
+  id: string;
+  access_token: string;
+  expires_at: string;
+  role: string;
+  synthetic_data: SyntheticSiteV2;
+  scenario_config?: ScenarioConfig;
+  scenario_name?: string;
+  walkthrough_steps?: WalkthroughStep[];
+  is_template?: boolean;
+}
 
 export default function SandboxDemoPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const [loading, setLoading] = useState(true);
-  const [sandboxData, setSandboxData] = useState<{
-    id: string;
-    access_token: string;
-    expires_at: string;
-    role: string;
-    synthetic_data: SyntheticSite;
-  } | null>(null);
+  const [sandboxData, setSandboxData] = useState<SandboxData | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +45,7 @@ export default function SandboxDemoPage() {
           setLoading(false);
           return;
         }
+
         const res = await fetch("/api/v1/sandbox/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -45,7 +55,7 @@ export default function SandboxDemoPage() {
         if (data.success) {
           setSandboxData(data.data);
         } else {
-          const syntheticData = generateSandboxData("site_audit", Date.now());
+          const syntheticData = generateScenarioData("site_audit", Date.now());
           setSandboxData({
             id: `demo_${Date.now()}`,
             access_token: "demo",
@@ -55,7 +65,7 @@ export default function SandboxDemoPage() {
           });
         }
       } catch {
-        const syntheticData = generateSandboxData("site_audit", 42);
+        const syntheticData = generateScenarioData("site_audit", 42);
         setSandboxData({
           id: "demo_fallback",
           access_token: "demo",
@@ -93,6 +103,9 @@ export default function SandboxDemoPage() {
     );
   }
 
+  const scenarioConfig = isScenarioConfig(sandboxData.scenario_config) ? sandboxData.scenario_config : undefined;
+  const featureFlags: SandboxFeatureFlags | undefined = scenarioConfig?.featureFlags;
+
   return (
     <SandboxProvider
       value={{
@@ -102,9 +115,19 @@ export default function SandboxDemoPage() {
         role: sandboxData.role,
         expiresAt: sandboxData.expires_at,
         domain: sandboxData.synthetic_data.domain,
+        scenarioConfig,
+        scenarioName: sandboxData.scenario_name,
+        isTemplate: sandboxData.is_template,
+        initialSteps: sandboxData.walkthrough_steps ?? [],
       }}
     >
-      <DemoInterface data={sandboxData.synthetic_data} expiresAt={sandboxData.expires_at} sandboxId={sandboxData.id} />
+      <DemoInterface
+        data={sandboxData.synthetic_data}
+        expiresAt={sandboxData.expires_at}
+        sandboxId={sandboxData.id}
+        featureFlags={featureFlags}
+      />
+      <WalkthroughRecorder />
     </SandboxProvider>
   );
 }

@@ -27,6 +27,10 @@ export async function POST(
         access_token: randomBytes(32).toString("hex"),
         role: original.role,
         expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        scenario_name: original.scenario_name ?? null,
+        scenario_config: original.scenario_config ?? null,
+        walkthrough_steps: [],
+        is_template: false,
       })
       .select()
       .single();

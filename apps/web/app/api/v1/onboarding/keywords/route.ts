@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     const keywords = await generateStructuredJSON<KeywordResult[]>(prompt);
 
     // Return without saving — user selects which ones in the UI, saved via /save
-    return NextResponse.json({ keywords: keywords.slice(0, 50) });
+    return NextResponse.json({ keywords: keywords.slice(0, 20) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -102,8 +102,6 @@ Return a JSON object with:
 {
   "llm_visibility_score": number (0-100),
   "score_breakdown": {
-    "chatgpt_visibility": number,
-    "perplexity_visibility": number,
     "gemini_visibility": number
   },
   "cited_queries": number,
@@ -152,7 +150,7 @@ ${trafficSources}
 WEBSITE CONTENT (homepage + key pages):
 ${websiteContent}
 
-Based on the site's content, industry, and traffic patterns, identify 30-50 keywords they should track and optimize for.
+Based on the site's content, industry, and traffic patterns, identify 15-20 high-value keywords they should track and optimize for.
 For each keyword, estimate realistic search volume and difficulty based on the industry.
 
 Return a JSON array:
@@ -174,7 +172,7 @@ export const PROMPT_LLM_CITATION_CHECK = (
   keywords: string[]
 ) => `${SYSTEM_PROMPT_GEO_SPECIALIST}
 
-For each of the following keywords, imagine you are an LLM (like ChatGPT, Perplexity, or Gemini) answering a user query.
+For each of the following keywords, imagine you are Gemini answering a user query.
 Determine whether the website "${domain}" would likely be cited or referenced in that answer.
 
 Consider:

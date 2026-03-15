@@ -51,6 +51,45 @@ export const CreateSandboxSchema = z.object({
   org_id: z.string().uuid().optional(),
 });
 
+// Scenario system
+export const ScenarioConfigSchema = z.object({
+  industry: z.enum(["saas", "ecommerce", "local_business", "media", "agency"]),
+  dataProfile: z.enum(["healthy", "struggling", "recovering", "new_site", "peak_performance"]),
+  featureFlags: z.object({
+    show_seo_health_score: z.boolean(),
+    show_technical_issues: z.boolean(),
+    show_backlinks: z.boolean(),
+    show_geo_citations: z.boolean(),
+    show_page_speed: z.boolean(),
+    show_crawl_errors: z.boolean(),
+    show_schema_issues: z.boolean(),
+    show_competitor_gap: z.boolean(),
+    show_content_clusters: z.boolean(),
+  }),
+  dataOverrides: z.object({
+    domain: z.string().optional(),
+    keyword_count: z.number().optional(),
+    monthly_sessions: z.number().optional(),
+    seo_health_score: z.number().min(0).max(100).optional(),
+  }).optional(),
+});
+
+export const CreateSandboxWithScenarioSchema = CreateSandboxSchema.extend({
+  scenario_name: z.string().min(1).max(120).optional(),
+  scenario_config: ScenarioConfigSchema.optional(),
+});
+
+export const SaveWalkthroughStepSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).default(""),
+  url_hash: z.string().default(""),
+  scroll_y: z.number().default(0),
+});
+
+export const PromoteToTemplateSchema = z.object({
+  scenario_name: z.string().min(1).max(120),
+});
+
 export const SandboxEnvironmentSchema = z.object({
   id: z.string().uuid(),
   template: z.string(),

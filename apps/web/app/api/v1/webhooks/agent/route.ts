@@ -77,12 +77,27 @@ export async function POST(request: NextRequest) {
             const seoReport = resultData.seo_report as Record<string, unknown> | undefined;
             const geoReport = resultData.geo_report as Record<string, unknown> | undefined;
 
+            // Compute live geo score from geo_records (same formula as dashboard)
+            const { data: geoRecords } = await supabase
+              .from("geo_records")
+              .select("is_cited")
+              .eq("site_id", run.site_id);
+
+            let liveGeoScore: number | undefined;
+            if (geoRecords && geoRecords.length > 0) {
+              const cited = geoRecords.filter((r) => r.is_cited).length;
+              liveGeoScore = Math.round((cited / geoRecords.length) * 100);
+            }
+
+            const storedGeoScore = typeof geoReport?.llm_visibility_score === "number" ? geoReport.llm_visibility_score : undefined;
+            const geoScore = liveGeoScore ?? storedGeoScore;
+
             const message = buildDiscordReportMessage({
               title: `SEO Report: ${site.domain}`,
               summary: typeof resultData.summary === "string" ? resultData.summary : "Audit complete.",
               domain: site.domain,
               healthScore: typeof seoReport?.overall_health_score === "number" ? seoReport.overall_health_score : undefined,
-              geoScore: typeof geoReport?.llm_visibility_score === "number" ? geoReport.llm_visibility_score : undefined,
+              geoScore,
               actionItems: Array.isArray(seoReport?.action_items)
                 ? (seoReport.action_items as Array<{ action: string; effort?: string }>)
                 : undefined,

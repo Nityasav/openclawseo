@@ -33,7 +33,7 @@ type ReportData = {
   };
   geo_report?: {
     llm_visibility_score?: number;
-    score_breakdown?: { chatgpt_visibility?: number; perplexity_visibility?: number; gemini_visibility?: number };
+    score_breakdown?: { gemini_visibility?: number };
     cited_queries?: number;
     total_queries_checked?: number;
     citation_rate?: number;
@@ -300,21 +300,11 @@ function ReportCard({ report }: { report: Report }) {
           {geo && (
             <div className="space-y-3">
               <SectionHeader icon={<Brain className="h-3.5 w-3.5" />} title="LLM Visibility (GEO)" />
-              <div className="grid grid-cols-3 gap-3">
-                {geo.score_breakdown && (
-                  <>
-                    {[
-                      { label: "ChatGPT", value: geo.score_breakdown.chatgpt_visibility },
-                      { label: "Perplexity", value: geo.score_breakdown.perplexity_visibility },
-                      { label: "Gemini", value: geo.score_breakdown.gemini_visibility },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-center">
-                        <p className="text-lg font-bold text-white/80">{value ?? "—"}</p>
-                        <p className="text-[10px] text-white/30 mt-0.5">{label}</p>
-                      </div>
-                    ))}
-                  </>
-                )}
+              <div className="grid grid-cols-1 gap-3 max-w-[160px]">
+                <div className="rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-center">
+                  <p className="text-lg font-bold text-white/80">{geoScore ?? geo.score_breakdown?.gemini_visibility ?? "—"}</p>
+                  <p className="text-[10px] text-white/30 mt-0.5">Gemini</p>
+                </div>
               </div>
               {geo.cited_queries !== undefined && (
                 <p className="text-xs text-white/40">

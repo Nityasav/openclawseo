@@ -9,7 +9,7 @@ export async function POST(
     const supabase = createServiceClient();
     const { data: sandbox } = await supabase
       .from("sandbox_environments")
-      .select("template")
+      .select("template, scenario_config")
       .eq("id", params.sandboxId)
       .single();
 

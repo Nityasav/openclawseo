@@ -159,7 +159,6 @@ function Step2Integrations({
   const [gscConnected, setGscConnected] = useState(false);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [polling, setPolling] = useState(false);
-
   const checkIntegrations = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/integrations");
@@ -179,12 +178,35 @@ function Step2Integrations({
     checkIntegrations();
   }, [checkIntegrations]);
 
-  // Poll for integration status when we return from OAuth
+  // Poll for integration status when we return from OAuth, then auto-advance
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const returnedFromOAuth = params.get("connected") === "gsc" || params.get("connected") === "ga4";
     if (params.get("step") === "2") {
       setPolling(true);
-      const interval = setInterval(checkIntegrations, 2000);
+      let advanced = false;
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/v1/integrations");
+          if (!res.ok) return;
+          const json = await res.json();
+          const providers: string[] = (json.integrations ?? []).map(
+            (i: { provider: string }) => i.provider
+          );
+          const anyConnected = providers.includes("gsc") || providers.includes("ga4");
+          setGscConnected(providers.includes("gsc"));
+          setGa4Connected(providers.includes("ga4"));
+          // Auto-advance only when returning from OAuth and integration is confirmed
+          if (returnedFromOAuth && anyConnected && !advanced) {
+            advanced = true;
+            clearInterval(interval);
+            setPolling(false);
+            onNext();
+          }
+        } catch {
+          // silent
+        }
+      }, 1500);
       const timeout = setTimeout(() => {
         clearInterval(interval);
         setPolling(false);
@@ -194,7 +216,8 @@ function Step2Integrations({
         clearTimeout(timeout);
       };
     }
-  }, [checkIntegrations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function connectGsc() {
     window.location.href = "/api/v1/integrations/gsc/connect?source=onboarding";

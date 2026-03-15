@@ -46,16 +46,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Discord not connected. Add a webhook URL in Settings." }, { status: 400 });
     }
 
+    // Compute live geo score from geo_records (same formula as dashboard)
+    const { data: geoRecords } = await supabase
+      .from("geo_records")
+      .select("is_cited")
+      .eq("site_id", report.site_id);
+
+    let liveGeoScore: number | undefined;
+    if (geoRecords && geoRecords.length > 0) {
+      const cited = geoRecords.filter((r) => r.is_cited).length;
+      liveGeoScore = Math.round((cited / geoRecords.length) * 100);
+    }
+
     const data = report.report_json as Record<string, unknown> | null;
     const seoReport = data?.seo_report as Record<string, unknown> | undefined;
     const geoReport = data?.geo_report as Record<string, unknown> | undefined;
+
+    const storedGeoScore = typeof geoReport?.llm_visibility_score === "number" ? geoReport.llm_visibility_score : undefined;
+    const geoScore = liveGeoScore ?? storedGeoScore;
 
     const message = buildDiscordReportMessage({
       title: report.title ?? "SEO Audit Report",
       summary: report.summary ?? "Audit complete.",
       domain: site?.domain ?? "your site",
       healthScore: typeof seoReport?.overall_health_score === "number" ? seoReport.overall_health_score : undefined,
-      geoScore: typeof geoReport?.llm_visibility_score === "number" ? geoReport.llm_visibility_score : undefined,
+      geoScore,
       actionItems: Array.isArray(seoReport?.action_items)
         ? (seoReport.action_items as Array<{ action: string; effort?: string }>)
         : undefined,

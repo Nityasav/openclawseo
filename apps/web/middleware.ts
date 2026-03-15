@@ -30,32 +30,29 @@ export async function middleware(request: NextRequest) {
 
   // Protect dashboard routes
   if (pathname.startsWith("/dashboard") && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set("next", pathname + (request.nextUrl.search || ""));
+    return NextResponse.redirect(loginUrl);
   }
 
   // Protect sandbox control panel
   if (pathname.startsWith("/sandbox/control") && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const loginUrl = new URL("/auth/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Redirect logged-in users away from login
-  if (pathname === "/login" && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/overview";
+  if ((pathname === "/login" || pathname === "/auth/login") && user) {
+    const url = new URL("/dashboard/overview", request.url);
     return NextResponse.redirect(url);
   }
 
   // Protect onboarding route — must be authenticated
+  // Use new URL to avoid leaking the onboarding search params into the login URL
   if (pathname.startsWith("/onboarding") && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set("next", pathname + (request.nextUrl.search || ""));
+    return NextResponse.redirect(loginUrl);
   }
 
   return supabaseResponse;

@@ -245,6 +245,10 @@ export interface Database {
           expires_at: string;
           session_recording_url: string | null;
           created_at: string;
+          scenario_name: string | null;
+          scenario_config: Json | null;
+          walkthrough_steps: Json;
+          is_template: boolean;
         };
         Insert: {
           id?: string;
@@ -257,6 +261,10 @@ export interface Database {
           expires_at?: string;
           session_recording_url?: string | null;
           created_at?: string;
+          scenario_name?: string | null;
+          scenario_config?: Json | null;
+          walkthrough_steps?: Json;
+          is_template?: boolean;
         };
         Update: {
           id?: string;
@@ -269,6 +277,10 @@ export interface Database {
           expires_at?: string;
           session_recording_url?: string | null;
           created_at?: string;
+          scenario_name?: string | null;
+          scenario_config?: Json | null;
+          walkthrough_steps?: Json;
+          is_template?: boolean;
         };
       };
       integrations: {
