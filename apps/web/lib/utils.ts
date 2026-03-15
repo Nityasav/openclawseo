@@ -28,6 +28,21 @@ export function formatRelativeTime(dateString: string): string {
   return formatDate(dateString);
 }
 
+/** Format time until a future date (e.g. for sandbox expiry). */
+export function formatTimeUntil(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = date.getTime() - now.getTime();
+  if (diffMs <= 0) return "Expired";
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 60) return `in ${diffMins}m`;
+  if (diffHours < 24) return `in ${diffHours}h`;
+  if (diffDays < 7) return `in ${diffDays}d`;
+  return formatDate(dateString);
+}
+
 export function formatNumber(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;

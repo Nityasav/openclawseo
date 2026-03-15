@@ -26,10 +26,10 @@ export default async function SandboxControlPage() {
     .limit(50);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Sandbox Control Panel</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage demo sandbox environments</p>
+    <div className="min-h-screen bg-[#0a0a0a] p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Sandbox Control Panel</h1>
+        <p className="text-sm text-white/50 mt-1">Launch and manage demo sandbox environments with shareable links, reset, fork, and expiry.</p>
       </div>
       <SandboxControlPanel sandboxes={sandboxes ?? []} />
     </div>

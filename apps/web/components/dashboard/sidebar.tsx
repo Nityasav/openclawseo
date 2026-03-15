@@ -14,6 +14,7 @@ import {
   Zap,
   LogOut,
   Edit3,
+  Box,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -28,10 +29,11 @@ const navItems = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const isAdmin = userRole === "admin";
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -69,6 +71,22 @@ export function Sidebar() {
               </li>
             );
           })}
+          {isAdmin && (
+            <li>
+              <Link
+                href="/sandbox/control"
+                className={cn(
+                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-xs transition-all duration-150",
+                  pathname === "/sandbox/control"
+                    ? "bg-white/[0.08] text-white"
+                    : "text-white/40 hover:bg-white/[0.04] hover:text-white/70"
+                )}
+              >
+                <Box className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+                Sandbox
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 

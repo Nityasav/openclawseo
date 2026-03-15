@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SandboxProvider } from "@/lib/sandbox/context";
 import { DemoInterface } from "./demo-interface";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { generateSandboxData } from "@/lib/sandbox/generator";
 import type { SyntheticSite } from "@/lib/sandbox/generator";
 
 export default function SandboxDemoPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
   const [loading, setLoading] = useState(true);
   const [sandboxData, setSandboxData] = useState<{
     id: string;
@@ -20,8 +23,19 @@ export default function SandboxDemoPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function createSandbox() {
+    async function loadSandbox() {
       try {
+        if (token) {
+          const res = await fetch(`/api/v1/sandbox/by-token?token=${encodeURIComponent(token)}`);
+          const data = await res.json();
+          if (data.success) {
+            setSandboxData(data.data);
+          } else {
+            setError(data.error || "Invalid or expired link");
+          }
+          setLoading(false);
+          return;
+        }
         const res = await fetch("/api/v1/sandbox/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -31,7 +45,6 @@ export default function SandboxDemoPage() {
         if (data.success) {
           setSandboxData(data.data);
         } else {
-          // Fallback: generate synthetic data client-side
           const syntheticData = generateSandboxData("site_audit", Date.now());
           setSandboxData({
             id: `demo_${Date.now()}`,
@@ -54,26 +67,26 @@ export default function SandboxDemoPage() {
         setLoading(false);
       }
     }
-    createSandbox();
-  }, []);
+    loadSandbox();
+  }, [token]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-sm text-gray-500">Spinning up your demo environment...</p>
-        <p className="text-xs text-gray-400">This takes under 5 seconds</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+        <p className="text-sm text-white/70">Spinning up your demo environment...</p>
+        <p className="text-xs text-white/40">This takes under 5 seconds</p>
       </div>
     );
   }
 
   if (!sandboxData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <div className="text-center">
-          <p className="text-red-600">{error || "Failed to create demo"}</p>
-          <Button className="mt-4" onClick={() => window.location.reload()}>
-            Try Again
+          <p className="text-red-400">{error || "Failed to create demo"}</p>
+          <Button className="mt-4" asChild>
+            <a href="/sandbox/demo">{token ? "Start a fresh demo" : "Try again"}</a>
           </Button>
         </div>
       </div>
