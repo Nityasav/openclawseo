@@ -141,7 +141,10 @@ export async function POST(request: NextRequest) {
       try {
         const agentRes = await fetch(`${agentServiceUrl}/run`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
           body: JSON.stringify({
             run_id: agentRun.id,
             site_id,
