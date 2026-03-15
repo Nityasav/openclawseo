@@ -85,7 +85,7 @@ export function DemoInterface({ data, expiresAt, sandboxId }: DemoInterfaceProps
       <div className="border-b border-white/[0.06] bg-[#0a0a0a] px-6 py-4">
         <div className="flex items-center gap-2">
           <Zap className="h-6 w-6 text-white" strokeWidth={1.5} />
-          <h1 className="text-xl font-bold text-white">SEOClaw</h1>
+          <h1 className="text-xl font-bold text-white">Crawl</h1>
           <span className="text-white/50">/ Overview</span>
         </div>
       </div>
