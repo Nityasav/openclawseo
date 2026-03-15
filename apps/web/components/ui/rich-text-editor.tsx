@@ -167,7 +167,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
     if (!editor) return;
     const normalized = value?.trim() || "<p></p>";
     if (editor.getHTML() !== normalized) {
-      editor.commands.setContent(normalized, false);
+      editor.commands.setContent(normalized, { emitUpdate: false });
     }
   }, [value, editor]);
 
