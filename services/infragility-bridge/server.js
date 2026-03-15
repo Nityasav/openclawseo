@@ -72,6 +72,20 @@ wss.on('connection', (ws) => {
 
 // ── REST endpoints ─────────────────────────────────────────────────────────
 
+// Send a message to Discord as the user account via REST API
+async function sendAsUser(content) {
+  const res = await fetch(`https://discord.com/api/v10/channels/${CHANNEL_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': process.env.DISCORD_USER_TOKEN,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error(`Discord API error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
 // POST /api/send-message
 app.post('/api/send-message', async (req, res) => {
   const { message } = req.body;
@@ -80,8 +94,7 @@ app.post('/api/send-message', async (req, res) => {
   }
 
   try {
-    const channel = await discord.channels.fetch(CHANNEL_ID);
-    await channel.send(`<@${CEO_BOT_ID}> ${message}`);
+    await sendAsUser(`<@${CEO_BOT_ID}> ${message}`);
     console.log(`[Web → Discord] ${message.substring(0, 100)}`);
 
     // Wait up to 60 s for the CEO bot to reply
@@ -113,8 +126,6 @@ app.post('/api/send-message', async (req, res) => {
 app.post('/api/optimization-request', async (req, res) => {
   const request = req.body;
   try {
-    const channel = await discord.channels.fetch(CHANNEL_ID);
-
     const reqs = Object.entries(request.requirements || {})
       .filter(([, v]) => v)
       .map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase())
@@ -129,7 +140,7 @@ app.post('/api/optimization-request', async (req, res) => {
       request.notes ? `**Notes:** ${request.notes}` : null,
     ].filter(Boolean);
 
-    await channel.send(lines.join('\n'));
+    await sendAsUser(lines.join('\n'));
     console.log(`[Web → Discord] Optimization request for ${request.repositoryUrl}`);
 
     res.json({
