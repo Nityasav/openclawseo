@@ -135,28 +135,49 @@ export async function POST(request: NextRequest) {
 
     const agentServiceUrl = process.env.AGENT_SERVICE_URL;
     if (agentServiceUrl) {
-      // Respond to the client immediately, then fire the agent call.
-      // maxDuration = 60 keeps the Vercel function alive long enough to send it.
-      const response = NextResponse.json({
+      // Fire the agent call and wait for it to be *accepted* (not completed).
+      // If the agent service is unreachable, mark the run as failed immediately
+      // so the UI doesn't get stuck on "pending" forever.
+      try {
+        const agentRes = await fetch(`${agentServiceUrl}/run`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            run_id: agentRun.id,
+            site_id,
+            run_type,
+            gsc_data: gscData,
+            ga4_data: ga4Data,
+            webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
+            webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
+          }),
+          signal: AbortSignal.timeout(10_000), // 10s to reach the service
+        });
+
+        if (!agentRes.ok) {
+          throw new Error(`Agent service responded with ${agentRes.status}`);
+        }
+      } catch (err) {
+        console.error("Agent service unreachable:", err);
+        await supabase
+          .from("agent_runs")
+          .update({
+            status: "failed",
+            completed_at: new Date().toISOString(),
+            error_message: "Agent service is unavailable. Please ensure it is deployed and AGENT_SERVICE_URL is configured correctly.",
+          })
+          .eq("id", agentRun.id);
+
+        return NextResponse.json(
+          { success: false, error: "Agent service is unavailable" },
+          { status: 503 }
+        );
+      }
+
+      return NextResponse.json({
         success: true,
         data: { run_id: agentRun.id, status: "pending" },
       });
-
-      fetch(`${agentServiceUrl}/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          run_id: agentRun.id,
-          site_id,
-          run_type,
-          gsc_data: gscData,
-          ga4_data: ga4Data,
-          webhook_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/webhooks/agent`,
-          webhook_secret: process.env.AGENT_WEBHOOK_SECRET,
-        }),
-      }).catch((err) => console.error("Agent trigger failed:", err));
-
-      return response;
     } else {
       // Demo/dev mode: complete synchronously
       await supabase
