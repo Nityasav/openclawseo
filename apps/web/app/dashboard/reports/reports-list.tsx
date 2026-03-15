@@ -12,11 +12,13 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Report {
   id: string;
+  site_id: string;
   title: string | null;
   summary: string | null;
   report_json: unknown;
   delivered_to_slack: boolean;
   created_at: string;
+  liveGeoScore?: number;
 }
 
 type ReportData = {
@@ -93,7 +95,8 @@ function ReportCard({ report }: { report: Report }) {
   const seo = data?.seo_report;
   const geo = data?.geo_report;
   const healthScore = seo?.overall_health_score;
-  const geoScore = geo?.llm_visibility_score;
+  // Prefer geo_records-based score (same source as dashboard); fall back to agent-generated score
+  const geoScore = report.liveGeoScore ?? (geo?.llm_visibility_score || undefined);
 
   async function sendToDiscord() {
     setSending(true);

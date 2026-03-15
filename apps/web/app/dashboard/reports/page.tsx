@@ -14,11 +14,13 @@ export default async function ReportsPage() {
 
   let reports: Array<{
     id: string;
+    site_id: string;
     title: string | null;
     summary: string | null;
     report_json: unknown;
     delivered_to_slack: boolean;
     created_at: string;
+    liveGeoScore?: number;
   }> = [];
 
   if (profile?.org_id) {
@@ -28,13 +30,39 @@ export default async function ReportsPage() {
       .eq("org_id", profile.org_id);
 
     if (sites?.length) {
-      const { data } = await supabase
-        .from("reports")
-        .select("id, title, summary, report_json, delivered_to_slack, created_at")
-        .in("site_id", sites.map((s) => s.id))
-        .order("created_at", { ascending: false })
-        .limit(50);
-      reports = data ?? [];
+      const siteIds = sites.map((s) => s.id);
+
+      const [{ data: reportsData }, { data: geoData }] = await Promise.all([
+        supabase
+          .from("reports")
+          .select("id, site_id, title, summary, report_json, delivered_to_slack, created_at")
+          .in("site_id", siteIds)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("geo_records")
+          .select("site_id, is_cited")
+          .in("site_id", siteIds),
+      ]);
+
+      // Build per-site geo score using the same formula as the dashboard
+      const geoScoreBySite: Record<string, number> = {};
+      if (geoData?.length) {
+        const bySite: Record<string, { cited: number; total: number }> = {};
+        for (const row of geoData) {
+          if (!bySite[row.site_id]) bySite[row.site_id] = { cited: 0, total: 0 };
+          bySite[row.site_id].total++;
+          if (row.is_cited) bySite[row.site_id].cited++;
+        }
+        for (const [siteId, { cited, total }] of Object.entries(bySite)) {
+          geoScoreBySite[siteId] = Math.round((cited / total) * 100);
+        }
+      }
+
+      reports = (reportsData ?? []).map((r) => ({
+        ...r,
+        liveGeoScore: geoScoreBySite[r.site_id],
+      }));
     }
   }
 
