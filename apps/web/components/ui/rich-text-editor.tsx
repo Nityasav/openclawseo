@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -161,6 +161,15 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       },
     },
   });
+
+  // Sync editor content when value is set from outside (e.g. after AI blog generation)
+  useEffect(() => {
+    if (!editor) return;
+    const normalized = value?.trim() || "<p></p>";
+    if (editor.getHTML() !== normalized) {
+      editor.commands.setContent(normalized, false);
+    }
+  }, [value, editor]);
 
   return (
     <div
