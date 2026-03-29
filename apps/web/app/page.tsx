@@ -1,8 +1,10 @@
 import Link from "next/link";
+import WelcomeModal from "@/components/WelcomeModal";
 
 export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white px-6 py-20">
+      <WelcomeModal />
       <div className="w-full max-w-2xl flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         <p className="text-xs font-medium tracking-[0.2em] uppercase text-white/30 mb-6">
           Autonomous SEO & GEO Platform
